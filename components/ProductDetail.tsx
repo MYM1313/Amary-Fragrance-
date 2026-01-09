@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Product } from '../types.ts';
-import { Instagram, ArrowLeft, Menu, Sparkles, Leaf, Droplets, MapPin, Gem, Hammer, Wind } from 'lucide-react';
+import { Instagram, ArrowLeft, Menu, Leaf, Droplets, MapPin, Gem, Hammer, Wind } from 'lucide-react';
 
 interface ProductDetailProps {
   product: Product;
@@ -94,6 +94,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
             <img 
               src={product.image} 
               alt={product.name}
+              loading="eager"
               className="w-full h-full object-cover scale-[1.3] transition-transform duration-[3s] ease-out group-hover:scale-[1.4]"
             />
             {/* Gloss & Light Effects */}
@@ -175,7 +176,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
             </div>
           </div>
 
-          {/* CTA - INSTAGRAM VIBRANT PINKISH RED */}
+          {/* CTA - INSTAGRAM - VIBRANT PINKISH RED & 3D */}
           <div 
             id="p-cta"
             className={`w-full mt-2 delay-[600ms] ${revealClass('p-cta')}`}
@@ -184,16 +185,23 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
               href="https://www.instagram.com/amary.aroma?igsh=N2tnMjdyZWJtd2N4&utm_source=qr" 
               target="_blank"
               rel="noopener noreferrer"
-              className="relative w-full py-4 md:py-5 rounded-2xl flex items-center justify-center gap-3 bg-gradient-to-r from-[#E1306C] via-[#FD1D1D] to-[#E1306C] backdrop-blur-xl border border-white/10 shadow-[0_15px_30px_-8px_rgba(225,48,108,0.3)] transition-all duration-700 hover:scale-[1.02] hover:shadow-[0_20px_40px_-8px_rgba(225,48,108,0.4)] active:scale-98 overflow-hidden group/btn"
+              className="relative w-full py-5 md:py-6 rounded-2xl flex items-center justify-center gap-3 
+              bg-gradient-to-tr from-[#FD1D1D] via-[#E1306C] to-[#C13584]
+              border-t border-[#ff8fa3]
+              shadow-[0_8px_0_#9F1845,0_20px_30px_rgba(225,48,108,0.4),inset_0_2px_1px_rgba(255,255,255,0.4)] 
+              transform transition-all duration-150 ease-out
+              hover:-translate-y-1 hover:shadow-[0_10px_0_#9F1845,0_25px_35px_rgba(225,48,108,0.5),inset_0_2px_1px_rgba(255,255,255,0.4)]
+              active:translate-y-[6px] active:shadow-[0_2px_0_#9F1845,0_5px_10px_rgba(0,0,0,0.2),inset_0_2px_1px_rgba(255,255,255,0.4)]
+              group/btn overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/btn:animate-shimmer" />
               
-              <Instagram size={18} className="text-white" />
-              <span className="text-[10px] font-bold tracking-[0.4em] text-white uppercase">
-                Order via Instagram
+              <Instagram size={20} className="text-white drop-shadow-md" />
+              <span className="text-[11px] font-bold tracking-[0.4em] text-white uppercase drop-shadow-md">
+                Instagram
               </span>
-              <div className="w-px h-3 bg-white/20" />
-              <Wind size={14} className="text-white/70" />
+              <div className="w-px h-4 bg-white/30 shadow-sm" />
+              <Wind size={14} className="text-white/80 drop-shadow-md" />
             </a>
           </div>
 

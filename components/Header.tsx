@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Instagram, X, ArrowRight, Mail, Compass, Menu } from 'lucide-react';
 
 const LogoAA: React.FC<{ className?: string }> = ({ className = "w-10 h-10" }) => (
@@ -14,19 +14,33 @@ const LogoAA: React.FC<{ className?: string }> = ({ className = "w-10 h-10" }) =
 const Header: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [visible, setVisible] = useState(true);
-  const [prevScrollPos, setPrevScrollPos] = useState(0);
+  const prevScrollPosRef = useRef(0);
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const currentScrollPos = window.pageYOffset;
-      const isScrollingUp = prevScrollPos > currentScrollPos;
-      if (currentScrollPos < 50 || isSidebarOpen) setVisible(true);
-      else setVisible(isScrollingUp);
-      setPrevScrollPos(currentScrollPos);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollPos = window.pageYOffset;
+          const prevScrollPos = prevScrollPosRef.current;
+          const isScrollingUp = prevScrollPos > currentScrollPos;
+          
+          if (currentScrollPos < 50 || isSidebarOpen) {
+            setVisible(true);
+          } else {
+            setVisible(isScrollingUp);
+          }
+          
+          prevScrollPosRef.current = currentScrollPos;
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener('scroll', handleScroll);
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [prevScrollPos, isSidebarOpen]);
+  }, [isSidebarOpen]);
 
   useEffect(() => {
     document.body.style.overflow = isSidebarOpen ? 'hidden' : 'unset';

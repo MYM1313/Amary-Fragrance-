@@ -47,17 +47,17 @@ const Fragments: React.FC = () => {
   const hasTriggeredRef = useRef(false);
   const isInternalScroll = useRef(false);
 
-  // Scroll Trigger: triggers swipe to next card when section is first viewed
+  // Scroll Trigger: triggers swipe to next card immediately when section is first viewed
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsInView(entry.isIntersecting);
         if (entry.isIntersecting && !hasTriggeredRef.current) {
           hasTriggeredRef.current = true;
-          // Automatically swipe to next card shortly after entering view
+          // Trigger immediate swipe (400ms)
           setTimeout(() => {
             setActiveIndex((prev) => (prev + 1) % fragments.length);
-          }, 800);
+          }, 400);
         }
       },
       { threshold: 0.4 }
@@ -66,12 +66,12 @@ const Fragments: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Auto-swipe logic only when in view
+  // Continuous auto-swipe logic every 3s when in view
   useEffect(() => {
     if (isPaused || !isInView) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % fragments.length);
-    }, 3500);
+    }, 3000);
     return () => clearInterval(interval);
   }, [isPaused, activeIndex, isInView]);
 
@@ -87,7 +87,7 @@ const Fragments: React.FC = () => {
           behavior: 'smooth'
         });
       }
-      setTimeout(() => { isInternalScroll.current = false; }, 800);
+      setTimeout(() => { isInternalScroll.current = false; }, 600);
     }
   }, [activeIndex]);
 
@@ -114,11 +114,11 @@ const Fragments: React.FC = () => {
   const handleManualNav = (index: number) => {
     setActiveIndex(index);
     setIsPaused(true);
-    setTimeout(() => setIsPaused(false), 8000);
+    setTimeout(() => setIsPaused(false), 5000);
   };
 
   const handleTouchStart = () => setIsPaused(true);
-  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 4000);
+  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 3000);
 
   return (
     <section 
@@ -148,8 +148,8 @@ const Fragments: React.FC = () => {
                   <img 
                     src={fragment.image} 
                     alt={fragment.title}
+                    loading="eager"
                     className="w-full h-full object-cover transition-transform duration-[4s] group-hover/card:scale-110"
-                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-70 group-hover/card:opacity-85" />
                   <div className="absolute inset-0 flex flex-col justify-end p-6">

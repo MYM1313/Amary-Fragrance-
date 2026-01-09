@@ -5,10 +5,17 @@ const Hero: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const fadeDistance = window.innerHeight * 0.6;
-      setScrollProgress(Math.min(1, scrollY / fadeDistance));
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          const fadeDistance = window.innerHeight * 0.6;
+          setScrollProgress(Math.min(1, scrollY / fadeDistance));
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);

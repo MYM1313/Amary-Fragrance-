@@ -77,6 +77,23 @@ const Collection: React.FC<CollectionProps> = ({ onSelectProduct }) => {
     return () => observer.disconnect();
   }, []);
 
+  // Determine entrance animation based on grid position (2x2 Logic)
+  // Index 0 (Top Left): From Left
+  // Index 1 (Top Right): From Right
+  // Index 2 (Bottom Left): From Left
+  // Index 3 (Bottom Right): From Right
+  const getEntranceClass = (index: number, isVisible: boolean) => {
+    if (isVisible) return 'opacity-100 translate-x-0 translate-y-0';
+
+    switch (index) {
+      case 0: return 'opacity-0 -translate-x-16'; // Top Left: Slide In From Left
+      case 1: return 'opacity-0 translate-x-16';  // Top Right: Slide In From Right
+      case 2: return 'opacity-0 -translate-x-16'; // Bottom Left: Slide In From Left
+      case 3: return 'opacity-0 translate-x-16';  // Bottom Right: Slide In From Right
+      default: return 'opacity-0 translate-y-12';
+    }
+  };
+
   return (
     <section 
       id="collections" 
@@ -91,27 +108,28 @@ const Collection: React.FC<CollectionProps> = ({ onSelectProduct }) => {
           <SectionTitle subtitle="Exclusives" title="The Collection" />
         </div>
 
-        {/* ULTRA COMPACT GRID */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-x-10 md:gap-y-10 max-w-2xl mx-auto">
+        {/* EXPANDED GRID: Increased max-width from 2xl to 6xl for significantly larger cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-x-10 md:gap-y-12 max-w-6xl mx-auto">
           {products.map((product, index) => (
             <div 
               key={product.id} 
               data-id={product.id}
-              className={`product-card relative group cursor-pointer transition-all duration-[1.2s] cubic-bezier(0.23,1,0.32,1) ${
-                visibleItems.has(product.id) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+              className={`product-card relative group cursor-pointer transition-all duration-[0.8s] cubic-bezier(0.23,1,0.32,1) ${
+                getEntranceClass(index, visibleItems.has(product.id))
               }`}
-              style={{ transitionDelay: `${index * 150}ms` }}
+              style={{ transitionDelay: `${index * 100}ms` }}
               onClick={() => onSelectProduct?.(product)}
             >
-              {/* Refined Miniature Card Container */}
+              {/* Card Container */}
               <div className="relative animate-gentle-float" style={{ animationDelay: `${index * 0.4}s` }}>
-                <div className="relative aspect-[1/1.2] rounded-[1.8rem] overflow-hidden bg-brand-light shadow-[0_12px_40px_rgba(0,0,0,0.03)] border border-black/[0.01] transition-all duration-[900ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:shadow-[0_40px_80px_rgba(197,160,89,0.15)] group-hover:scale-[1.08] group-hover:-translate-y-2">
+                <div className="relative aspect-[1/1.2] rounded-[1.8rem] overflow-hidden bg-brand-light shadow-[0_12px_40px_rgba(0,0,0,0.03)] border border-black/[0.01] transition-all duration-[900ms] ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:shadow-[0_40px_80px_rgba(197,160,89,0.15)] group-hover:scale-[1.03] group-hover:-translate-y-2">
                   
-                  {/* REDUCED IMAGE SCALE */}
+                  {/* ZOOMED IMAGE: Increased initial scale to 1.1 for "Little Zoom in" effect */}
                   <img 
                     src={product.image} 
                     alt={product.name}
-                    className="w-full h-full object-cover brightness-[0.98] transition-transform duration-[8s] ease-out scale-[1.0] group-hover:scale-[1.15]"
+                    loading="eager"
+                    className="w-full h-full object-cover brightness-[0.98] transition-transform duration-[8s] ease-out scale-[1.1] group-hover:scale-[1.25]"
                   />
 
                   {/* CONTINUOUS LUXURY EFFECTS */}
@@ -130,7 +148,7 @@ const Collection: React.FC<CollectionProps> = ({ onSelectProduct }) => {
                   </div>
 
                   {/* Minimal Discover Tag */}
-                  <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 w-[75%] flex items-center justify-between py-2 px-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg transition-all duration-1000 transform group-hover:bg-brand-gold group-hover:border-brand-gold ${visibleItems.has(product.id) ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`} style={{ transitionDelay: `${index * 150 + 400}ms` }}>
+                  <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 w-[75%] flex items-center justify-between py-2 px-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg transition-all duration-1000 transform group-hover:bg-brand-gold group-hover:border-brand-gold ${visibleItems.has(product.id) ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`} style={{ transitionDelay: `${index * 100 + 400}ms` }}>
                     <span className="text-[7px] font-bold tracking-[0.3em] text-white uppercase">Open</span>
                     <ArrowRight size={10} className="text-white group-hover:translate-x-1.5 transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]" />
                   </div>

@@ -43,16 +43,21 @@ const WhyAmary: React.FC = () => {
   const hasTriggeredRef = useRef(false);
   const isInternalScroll = useRef(false);
 
-  // Scroll Entrance Trigger: swipe to next on view
+  // Scroll Entrance Trigger: swipe to next immediately every time it enters view
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsInView(entry.isIntersecting);
-        if (entry.isIntersecting && !hasTriggeredRef.current) {
-          hasTriggeredRef.current = true;
-          setTimeout(() => {
-            setActiveIndex((prev) => (prev + 1) % corePoints.length);
-          }, 800);
+        if (entry.isIntersecting) {
+          if (!hasTriggeredRef.current) {
+            hasTriggeredRef.current = true;
+            setTimeout(() => {
+              setActiveIndex((prev) => (prev + 1) % corePoints.length);
+            }, 400);
+          }
+        } else {
+          // Reset trigger so it can fire again on next entry
+          hasTriggeredRef.current = false;
         }
       },
       { threshold: 0.4 }
@@ -62,12 +67,12 @@ const WhyAmary: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Auto-swipe logic every 3.5 seconds only when in view
+  // Auto-swipe logic every 3s only when in view
   useEffect(() => {
     if (isPaused || !isInView) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % corePoints.length);
-    }, 3500);
+    }, 3000);
     return () => clearInterval(interval);
   }, [isPaused, activeIndex, isInView]);
 
@@ -83,7 +88,7 @@ const WhyAmary: React.FC = () => {
           behavior: 'smooth'
         });
       }
-      setTimeout(() => { isInternalScroll.current = false; }, 800);
+      setTimeout(() => { isInternalScroll.current = false; }, 600);
     }
   }, [activeIndex]);
 
@@ -109,11 +114,11 @@ const WhyAmary: React.FC = () => {
   const handleManualNav = (index: number) => {
     setActiveIndex(index);
     setIsPaused(true);
-    setTimeout(() => setIsPaused(false), 8000);
+    setTimeout(() => setIsPaused(false), 5000);
   };
 
   const handleTouchStart = () => setIsPaused(true);
-  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 4000);
+  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 3000);
 
   return (
     <section 
@@ -142,6 +147,7 @@ const WhyAmary: React.FC = () => {
                 <img 
                   src={point.image} 
                   alt={point.title}
+                  loading="eager"
                   className="w-full h-full object-cover brightness-[0.75] transition-transform duration-[4s] group-hover/card:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent opacity-90" />

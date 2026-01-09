@@ -47,14 +47,18 @@ const Reviews: React.FC = () => {
   const hasTriggeredRef = useRef(false);
   const isInternalScroll = useRef(false);
 
-  // Scroll Trigger: engagements on first sight
+  // Scroll Trigger: triggers auto-swipe every time section enters view
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsInView(entry.isIntersecting);
-        if (entry.isIntersecting && !hasTriggeredRef.current) {
-          hasTriggeredRef.current = true;
-          setTimeout(() => setActiveIndex((prev) => (prev + 1) % reviews.length), 800);
+        if (entry.isIntersecting) {
+            if (!hasTriggeredRef.current) {
+                hasTriggeredRef.current = true;
+                setTimeout(() => setActiveIndex((prev) => (prev + 1) % reviews.length), 400);
+            }
+        } else {
+            hasTriggeredRef.current = false;
         }
       },
       { threshold: 0.4 }
@@ -63,12 +67,12 @@ const Reviews: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Auto-swipe logic with reset on change, only when in view
+  // Auto-swipe logic with reset on change, every 3s only when in view
   useEffect(() => {
     if (isPaused || !isInView) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % reviews.length);
-    }, 3500);
+    }, 3000);
     return () => clearInterval(interval);
   }, [isPaused, activeIndex, isInView]);
 
@@ -84,7 +88,7 @@ const Reviews: React.FC = () => {
           behavior: 'smooth'
         });
       }
-      setTimeout(() => { isInternalScroll.current = false; }, 800);
+      setTimeout(() => { isInternalScroll.current = false; }, 600);
     }
   }, [activeIndex]);
 
@@ -110,11 +114,11 @@ const Reviews: React.FC = () => {
   const handleManualNav = (index: number) => {
     setActiveIndex(index);
     setIsPaused(true);
-    setTimeout(() => setIsPaused(false), 8000);
+    setTimeout(() => setIsPaused(false), 5000);
   };
 
   const handleTouchStart = () => setIsPaused(true);
-  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 4000);
+  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 3000);
 
   return (
     <section 
@@ -149,7 +153,7 @@ const Reviews: React.FC = () => {
                   <p className="text-brand-dark/80 italic text-[13px] md:text-[14px] leading-relaxed mb-6 font-serif">"{review.text}"</p>
                 </div>
                 <div className="flex items-center gap-3 border-t border-black/[0.02] pt-4">
-                  <img src={review.avatar} alt={review.name} className="w-8 h-8 rounded-full object-cover grayscale hover:grayscale-0 transition-all duration-700 border border-white shadow-sm" />
+                  <img src={review.avatar} alt={review.name} loading="eager" className="w-8 h-8 rounded-full object-cover grayscale hover:grayscale-0 transition-all duration-700 border border-white shadow-sm" />
                   <div>
                     <h4 className="font-serif text-[11px] font-bold text-brand-dark leading-tight tracking-wide">{review.name}</h4>
                     <p className="text-[8px] tracking-[0.15em] text-brand-muted uppercase font-bold">{review.location}</p>
