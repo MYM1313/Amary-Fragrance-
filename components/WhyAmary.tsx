@@ -37,41 +37,39 @@ const corePoints: Feature[] = [
 const WhyAmary: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const hasTriggeredRef = useRef(false);
   const isInternalScroll = useRef(false);
 
-  // Auto-swipe logic every 3.5 seconds. 
-  useEffect(() => {
-    if (isPaused) return;
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % corePoints.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [isPaused, activeIndex]);
-
-  // Scroll Entrance Trigger
+  // Scroll Entrance Trigger: swipe to next on view
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
+        setIsInView(entry.isIntersecting);
         if (entry.isIntersecting && !hasTriggeredRef.current) {
           hasTriggeredRef.current = true;
-          // Small bump to hint scrollability
           setTimeout(() => {
-            if (containerRef.current) {
-               containerRef.current.scrollBy({ left: 40, behavior: 'smooth' });
-               setTimeout(() => containerRef.current?.scrollBy({ left: -40, behavior: 'smooth' }), 600);
-            }
-          }, 600);
+            setActiveIndex((prev) => (prev + 1) % corePoints.length);
+          }, 800);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.4 }
     );
 
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // Auto-swipe logic every 3.5 seconds only when in view
+  useEffect(() => {
+    if (isPaused || !isInView) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % corePoints.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [isPaused, activeIndex, isInView]);
 
   // Sync state with physical scroll position
   useEffect(() => {
@@ -79,7 +77,6 @@ const WhyAmary: React.FC = () => {
       isInternalScroll.current = true;
       const targetElement = containerRef.current.children[activeIndex] as HTMLElement;
       if (targetElement) {
-        // Adjust for padding (24px for px-6 usually)
         const scrollTarget = targetElement.offsetLeft - 24;
         containerRef.current.scrollTo({
           left: scrollTarget,
@@ -98,7 +95,7 @@ const WhyAmary: React.FC = () => {
         if (!firstChild) return;
 
         const itemWidth = firstChild.clientWidth;
-        const gap = 24; // gap-6
+        const gap = 24;
         const totalWidth = itemWidth + gap;
         
         const newIndex = Math.round(scrollLeft / totalWidth);
@@ -115,7 +112,6 @@ const WhyAmary: React.FC = () => {
     setTimeout(() => setIsPaused(false), 8000);
   };
 
-  // Touch handlers
   const handleTouchStart = () => setIsPaused(true);
   const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 4000);
 
@@ -161,7 +157,6 @@ const WhyAmary: React.FC = () => {
             <div className="w-6 flex-shrink-0" />
           </div>
 
-          {/* Premium Pagination Indicators */}
           <div className="flex justify-center items-center gap-4 mt-8">
             {corePoints.map((_, i) => (
               <button

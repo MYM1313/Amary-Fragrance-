@@ -41,34 +41,36 @@ const reviews: Review[] = [
 const Reviews: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const hasTriggeredRef = useRef(false);
   const isInternalScroll = useRef(false);
 
-  // Auto-swipe logic with reset on change
-  useEffect(() => {
-    if (isPaused) return;
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % reviews.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [isPaused, activeIndex]);
-
   // Scroll Trigger: engagements on first sight
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
+        setIsInView(entry.isIntersecting);
         if (entry.isIntersecting && !hasTriggeredRef.current) {
           hasTriggeredRef.current = true;
-          setTimeout(() => setActiveIndex(1), 800);
+          setTimeout(() => setActiveIndex((prev) => (prev + 1) % reviews.length), 800);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.4 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
+
+  // Auto-swipe logic with reset on change, only when in view
+  useEffect(() => {
+    if (isPaused || !isInView) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % reviews.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [isPaused, activeIndex, isInView]);
 
   // Sync scroll
   useEffect(() => {
@@ -76,7 +78,6 @@ const Reviews: React.FC = () => {
       isInternalScroll.current = true;
       const targetElement = containerRef.current.children[activeIndex] as HTMLElement;
       if (targetElement) {
-        // Adjust scroll target to account for padding (24px for px-6)
         const scrollTarget = targetElement.offsetLeft - 24; 
         containerRef.current.scrollTo({
           left: scrollTarget,
@@ -95,7 +96,7 @@ const Reviews: React.FC = () => {
         if (!firstChild) return;
 
         const itemWidth = firstChild.clientWidth;
-        const gap = 16; // gap-4 is 16px
+        const gap = 16;
         const totalWidth = itemWidth + gap;
         
         const newIndex = Math.round(scrollLeft / totalWidth);
@@ -112,7 +113,6 @@ const Reviews: React.FC = () => {
     setTimeout(() => setIsPaused(false), 8000);
   };
 
-  // Touch Handlers
   const handleTouchStart = () => setIsPaused(true);
   const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 4000);
 

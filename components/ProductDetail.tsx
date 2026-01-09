@@ -175,7 +175,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
             </div>
           </div>
 
-          {/* CTA - ROSE GLASS */}
+          {/* CTA - INSTAGRAM VIBRANT PINKISH RED */}
           <div 
             id="p-cta"
             className={`w-full mt-2 delay-[600ms] ${revealClass('p-cta')}`}
@@ -184,16 +184,16 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
               href="https://www.instagram.com/amary.aroma?igsh=N2tnMjdyZWJtd2N4&utm_source=qr" 
               target="_blank"
               rel="noopener noreferrer"
-              className="relative w-full py-4 md:py-5 rounded-2xl flex items-center justify-center gap-3 bg-gradient-to-r from-rose-100 via-pink-100 to-rose-100 backdrop-blur-xl border border-rose-200 shadow-[0_15px_30px_-8px_rgba(244,63,94,0.15)] transition-all duration-700 hover:scale-[1.02] hover:shadow-[0_20px_40px_-8px_rgba(244,63,94,0.25)] active:scale-98 overflow-hidden group/btn"
+              className="relative w-full py-4 md:py-5 rounded-2xl flex items-center justify-center gap-3 bg-gradient-to-r from-[#E1306C] via-[#FD1D1D] to-[#E1306C] backdrop-blur-xl border border-white/10 shadow-[0_15px_30px_-8px_rgba(225,48,108,0.3)] transition-all duration-700 hover:scale-[1.02] hover:shadow-[0_20px_40px_-8px_rgba(225,48,108,0.4)] active:scale-98 overflow-hidden group/btn"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover/btn:animate-shimmer" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/btn:animate-shimmer" />
               
-              <Instagram size={16} className="text-rose-900/70" />
-              <span className="text-[10px] font-bold tracking-[0.4em] text-rose-950 uppercase">
+              <Instagram size={18} className="text-white" />
+              <span className="text-[10px] font-bold tracking-[0.4em] text-white uppercase">
                 Order via Instagram
               </span>
-              <div className="w-px h-3 bg-rose-900/10" />
-              <Wind size={12} className="text-rose-900/40" />
+              <div className="w-px h-3 bg-white/20" />
+              <Wind size={14} className="text-white/70" />
             </a>
           </div>
 

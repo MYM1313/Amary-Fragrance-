@@ -41,69 +41,65 @@ const fragments: Fragment[] = [
 const Fragments: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isInView, setIsInView] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const hasTriggeredRef = useRef(false);
   const isInternalScroll = useRef(false);
 
-  // Auto-swipe logic with timer reset on index change
-  useEffect(() => {
-    if (isPaused) return;
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % fragments.length);
-    }, 3500); // Slightly slower for more relaxed pace
-    return () => clearInterval(interval);
-  }, [isPaused, activeIndex]);
-
-  // Scroll Trigger: engaging user with a smooth swipe when section is first viewed
+  // Scroll Trigger: triggers swipe to next card when section is first viewed
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
+        setIsInView(entry.isIntersecting);
         if (entry.isIntersecting && !hasTriggeredRef.current) {
           hasTriggeredRef.current = true;
-          // Gentle nudge to show interactivity
+          // Automatically swipe to next card shortly after entering view
           setTimeout(() => {
-            if (containerRef.current) {
-               containerRef.current.scrollBy({ left: 40, behavior: 'smooth' });
-               setTimeout(() => containerRef.current?.scrollBy({ left: -40, behavior: 'smooth' }), 600);
-            }
-          }, 700);
+            setActiveIndex((prev) => (prev + 1) % fragments.length);
+          }, 800);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.4 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
+  // Auto-swipe logic only when in view
+  useEffect(() => {
+    if (isPaused || !isInView) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % fragments.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [isPaused, activeIndex, isInView]);
+
   // Sync state with physical scroll position (Programmatic Scroll)
   useEffect(() => {
-    if (containerRef.current && !isPaused) { // Only auto-scroll if not paused by user interaction
+    if (containerRef.current && !isPaused) { 
       isInternalScroll.current = true;
       const targetElement = containerRef.current.children[activeIndex] as HTMLElement;
       if (targetElement) {
-        // Calculate offset to center or align start properly with padding
-        const scrollTarget = targetElement.offsetLeft - 24; // 24 is the padding left
+        const scrollTarget = targetElement.offsetLeft - 24; 
         containerRef.current.scrollTo({
           left: scrollTarget,
           behavior: 'smooth'
         });
       }
-      // Reset internal scroll flag after animation completes
       setTimeout(() => { isInternalScroll.current = false; }, 800);
     }
-  }, [activeIndex]); // Remove isPaused from dependency to avoid jump on pause
+  }, [activeIndex]);
 
   const handleScroll = () => {
     if (containerRef.current) {
-      // If user is manually scrolling, we update the active index to match their position
       if (!isInternalScroll.current) {
         const scrollLeft = containerRef.current.scrollLeft;
         const firstChild = containerRef.current.children[0] as HTMLElement;
         if (!firstChild) return;
         
         const itemWidth = firstChild.clientWidth;
-        const gap = 24; // gap-6 is 24px
+        const gap = 24;
         const totalWidth = itemWidth + gap;
         
         const newIndex = Math.round(scrollLeft / totalWidth);
@@ -118,16 +114,11 @@ const Fragments: React.FC = () => {
   const handleManualNav = (index: number) => {
     setActiveIndex(index);
     setIsPaused(true);
-    // Longer pause after manual navigation button click
     setTimeout(() => setIsPaused(false), 8000);
   };
 
-  // Touch Handlers for Mobile Inertia
   const handleTouchStart = () => setIsPaused(true);
-  const handleTouchEnd = () => {
-    // Resume auto-swipe after a delay to let momentum settle
-    setTimeout(() => setIsPaused(false), 4000);
-  };
+  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 4000);
 
   return (
     <section 
@@ -143,12 +134,6 @@ const Fragments: React.FC = () => {
         <SectionTitle subtitle="The Archive" title="Scent Fragments" />
 
         <div className="relative group/main">
-          {/* 
-             Enhanced Scroll Container:
-             - scroll-pl-6: Ensures the first item snaps 24px from the left, respecting padding.
-             - snap-x snap-mandatory: Enforces clean stops.
-             - cursor-grab: Indicates dragging capability.
-          */}
           <div 
             ref={containerRef}
             onScroll={handleScroll}
@@ -179,11 +164,9 @@ const Fragments: React.FC = () => {
               </div>
             ))}
             
-            {/* Spacer for right side scrolling feel */}
             <div className="w-6 flex-shrink-0" />
           </div>
 
-          {/* Premium Dots Pagination */}
           <div className="flex justify-center items-center gap-4 mt-8">
             {fragments.map((_, i) => (
               <button
