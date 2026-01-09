@@ -43,7 +43,7 @@ const WhyAmary: React.FC = () => {
   const hasTriggeredRef = useRef(false);
   const isInternalScroll = useRef(false);
 
-  // Scroll Entrance Trigger: swipe to next immediately every time it enters view
+  // Scroll Entrance Trigger
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -51,62 +51,71 @@ const WhyAmary: React.FC = () => {
         if (entry.isIntersecting) {
           if (!hasTriggeredRef.current) {
             hasTriggeredRef.current = true;
+            // Delay slighty to ensure layout is ready, then swipe to next
             setTimeout(() => {
-              setActiveIndex((prev) => (prev + 1) % corePoints.length);
-            }, 400);
+              setActiveIndex((prev) => {
+                 const next = (prev + 1) % corePoints.length;
+                 return next;
+              });
+            }, 600);
           }
         } else {
-          // Reset trigger so it can fire again on next entry
+          // Reset trigger so it triggers again on next entry
           hasTriggeredRef.current = false;
         }
       },
-      { threshold: 0.4 }
+      { threshold: 0.3 }
     );
 
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
-  // Auto-swipe logic every 3s only when in view
+  // Auto-swipe loop
   useEffect(() => {
     if (isPaused || !isInView) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % corePoints.length);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [isPaused, activeIndex, isInView]);
+  }, [isPaused, isInView]);
 
-  // Sync state with physical scroll position
+  // Sync scroll position with activeIndex state
   useEffect(() => {
-    if (containerRef.current && !isPaused) {
+    if (containerRef.current) {
       isInternalScroll.current = true;
       const targetElement = containerRef.current.children[activeIndex] as HTMLElement;
+      
       if (targetElement) {
-        const scrollTarget = targetElement.offsetLeft - 24;
+        // Calculate position: target offsetLeft minus container padding/gap
+        // We use offsetLeft relative to the scrolling container
+        const containerPaddingLeft = 4; // px-1 is 4px
+        const scrollTarget = targetElement.offsetLeft - containerPaddingLeft;
+        
         containerRef.current.scrollTo({
           left: scrollTarget,
           behavior: 'smooth'
         });
       }
-      setTimeout(() => { isInternalScroll.current = false; }, 600);
+
+      // Re-enable scroll listener after animation
+      setTimeout(() => { isInternalScroll.current = false; }, 800);
     }
   }, [activeIndex]);
 
   const handleScroll = () => {
-    if (containerRef.current) {
-      if (!isInternalScroll.current) {
-        const scrollLeft = containerRef.current.scrollLeft;
-        const firstChild = containerRef.current.children[0] as HTMLElement;
-        if (!firstChild) return;
+    if (containerRef.current && !isInternalScroll.current) {
+      const scrollLeft = containerRef.current.scrollLeft;
+      const firstChild = containerRef.current.children[0] as HTMLElement;
+      if (!firstChild) return;
 
-        const itemWidth = firstChild.clientWidth;
-        const gap = 24;
-        const totalWidth = itemWidth + gap;
-        
-        const newIndex = Math.round(scrollLeft / totalWidth);
-        if (newIndex !== activeIndex && newIndex >= 0 && newIndex < corePoints.length) {
-          setActiveIndex(newIndex);
-        }
+      const itemWidth = firstChild.clientWidth;
+      const gap = 24; // gap-6
+      const totalWidth = itemWidth + gap;
+      
+      const newIndex = Math.round(scrollLeft / totalWidth);
+      if (newIndex !== activeIndex && newIndex >= 0 && newIndex < corePoints.length) {
+        setActiveIndex(newIndex);
       }
     }
   };
@@ -117,9 +126,6 @@ const WhyAmary: React.FC = () => {
     setTimeout(() => setIsPaused(false), 5000);
   };
 
-  const handleTouchStart = () => setIsPaused(true);
-  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 3000);
-
   return (
     <section 
       id="why-amary" 
@@ -127,17 +133,18 @@ const WhyAmary: React.FC = () => {
       className="py-20 md:py-32 bg-white overflow-hidden relative"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setTimeout(() => setIsPaused(false), 3000)}
     >
       <div className="max-w-7xl mx-auto px-6">
         <SectionTitle subtitle="The Core Essence" title="Why AMARY" />
 
         <div className="relative group/main">
+          {/* Added 'relative' to container for correct offsetLeft calculation */}
           <div 
             ref={containerRef}
             onScroll={handleScroll}
-            className="flex overflow-x-auto gap-6 pb-12 snap-x snap-mandatory no-scrollbar scroll-smooth px-1 scroll-pl-1 md:scroll-pl-0 cursor-grab active:cursor-grabbing"
+            className="flex overflow-x-auto gap-6 pb-12 snap-x snap-mandatory no-scrollbar scroll-smooth px-1 relative cursor-grab active:cursor-grabbing"
           >
             {corePoints.map((point) => (
               <div 

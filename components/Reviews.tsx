@@ -47,7 +47,7 @@ const Reviews: React.FC = () => {
   const hasTriggeredRef = useRef(false);
   const isInternalScroll = useRef(false);
 
-  // Scroll Trigger: triggers auto-swipe every time section enters view
+  // Scroll Entrance Trigger
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -55,58 +55,62 @@ const Reviews: React.FC = () => {
         if (entry.isIntersecting) {
             if (!hasTriggeredRef.current) {
                 hasTriggeredRef.current = true;
-                setTimeout(() => setActiveIndex((prev) => (prev + 1) % reviews.length), 400);
+                setTimeout(() => {
+                    setActiveIndex((prev) => (prev + 1) % reviews.length);
+                }, 600);
             }
         } else {
             hasTriggeredRef.current = false;
         }
       },
-      { threshold: 0.4 }
+      { threshold: 0.3 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
-  // Auto-swipe logic with reset on change, every 3s only when in view
+  // Auto-swipe loop
   useEffect(() => {
     if (isPaused || !isInView) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % reviews.length);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [isPaused, activeIndex, isInView]);
+  }, [isPaused, isInView]);
 
   // Sync scroll
   useEffect(() => {
-    if (containerRef.current && !isPaused) {
+    if (containerRef.current) {
       isInternalScroll.current = true;
       const targetElement = containerRef.current.children[activeIndex] as HTMLElement;
+      
       if (targetElement) {
-        const scrollTarget = targetElement.offsetLeft - 24; 
+        // Offset relative to container (px-6 is 24px)
+        const containerPaddingLeft = 24; 
+        const scrollTarget = targetElement.offsetLeft - containerPaddingLeft; 
+        
         containerRef.current.scrollTo({
           left: scrollTarget,
           behavior: 'smooth'
         });
       }
-      setTimeout(() => { isInternalScroll.current = false; }, 600);
+      setTimeout(() => { isInternalScroll.current = false; }, 800);
     }
   }, [activeIndex]);
 
   const handleScroll = () => {
-    if (containerRef.current) {
-      if (!isInternalScroll.current) {
-        const scrollLeft = containerRef.current.scrollLeft;
-        const firstChild = containerRef.current.children[0] as HTMLElement;
-        if (!firstChild) return;
+    if (containerRef.current && !isInternalScroll.current) {
+      const scrollLeft = containerRef.current.scrollLeft;
+      const firstChild = containerRef.current.children[0] as HTMLElement;
+      if (!firstChild) return;
 
-        const itemWidth = firstChild.clientWidth;
-        const gap = 16;
-        const totalWidth = itemWidth + gap;
-        
-        const newIndex = Math.round(scrollLeft / totalWidth);
-        if (newIndex !== activeIndex && newIndex >= 0 && newIndex < reviews.length) {
-          setActiveIndex(newIndex);
-        }
+      const itemWidth = firstChild.clientWidth;
+      const gap = 16; // gap-4
+      const totalWidth = itemWidth + gap;
+      
+      const newIndex = Math.round(scrollLeft / totalWidth);
+      if (newIndex !== activeIndex && newIndex >= 0 && newIndex < reviews.length) {
+        setActiveIndex(newIndex);
       }
     }
   };
@@ -117,18 +121,15 @@ const Reviews: React.FC = () => {
     setTimeout(() => setIsPaused(false), 5000);
   };
 
-  const handleTouchStart = () => setIsPaused(true);
-  const handleTouchEnd = () => setTimeout(() => setIsPaused(false), 3000);
-
   return (
     <section 
       id="reviews" 
       ref={sectionRef}
-      className="py-16 md:py-24 bg-white overflow-hidden"
+      className="py-16 md:py-24 bg-white overflow-hidden relative"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setTimeout(() => setIsPaused(false), 3000)}
     >
       <div className="max-w-7xl mx-auto px-6">
         <SectionTitle subtitle="Voices" title="Reviews" />
@@ -137,7 +138,7 @@ const Reviews: React.FC = () => {
           <div 
             ref={containerRef}
             onScroll={handleScroll}
-            className="flex overflow-x-auto gap-4 pb-10 snap-x snap-mandatory no-scrollbar scroll-smooth px-6 scroll-pl-6 cursor-grab active:cursor-grabbing"
+            className="flex overflow-x-auto gap-4 pb-10 snap-x snap-mandatory no-scrollbar scroll-smooth px-6 scroll-pl-6 relative cursor-grab active:cursor-grabbing"
           >
             {reviews.map((review) => (
               <div 
