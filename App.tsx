@@ -36,34 +36,22 @@ const App: React.FC = () => {
       <Router>
         <div className="min-h-screen bg-brand-light font-sans text-brand-dark overflow-x-hidden selection:bg-brand-gold selection:text-white">
           <Routes>
-            {/* Admin Panel Routes (Separate) */}
-            <Route path="/admin/*" element={
-              <div className="min-h-screen bg-slate-50">
-                <Routes>
-                  <Route path="/" element={<AdminDashboard />} />
-                  <Route path="/products" element={<AdminProducts />} />
-                  <Route path="/orders" element={<AdminOrders />} />
-                  <Route path="/coupons" element={<AdminCoupons />} />
-                </Routes>
-              </div>
-            } />
+            {/* Admin Panel Routes (Separate - No Header/Footer) */}
+            <Route path="/admin" element={<div className="min-h-screen bg-slate-50"><AdminDashboard /></div>} />
+            <Route path="/admin/products" element={<div className="min-h-screen bg-slate-50"><AdminProducts /></div>} />
+            <Route path="/admin/orders" element={<div className="min-h-screen bg-slate-50"><AdminOrders /></div>} />
+            <Route path="/admin/coupons" element={<div className="min-h-screen bg-slate-50"><AdminCoupons /></div>} />
 
-            {/* Main Website Routes */}
-            <Route path="/*" element={
-              <>
-                <Header />
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/shop" element={<ShopPage />} />
-                  <Route path="/product/:id" element={<ProductDetailPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/orders" element={<OrdersPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-                <Footer />
-              </>
-            } />
+            {/* Main Website Routes (With Header/Footer) */}
+            <Route path="/" element={<><Header /><HomePage /><Footer /></>} />
+            <Route path="/shop" element={<><Header /><ShopPage /><Footer /></>} />
+            <Route path="/product/:id" element={<><Header /><ProductDetailPage /><Footer /></>} />
+            <Route path="/cart" element={<><Header /><CartPage /><Footer /></>} />
+            <Route path="/checkout" element={<><Header /><CheckoutPage /><Footer /></>} />
+            <Route path="/orders" element={<><Header /><OrdersPage /><Footer /></>} />
+            
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </Router>
