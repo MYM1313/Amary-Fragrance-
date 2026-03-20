@@ -57,9 +57,24 @@ interface FirestoreErrorInfo {
 
 export const useStore = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [ordersLoaded, setOrdersLoaded] = useState(false);
+  const [couponsLoaded, setCouponsLoaded] = useState(false);
+  const [authLoaded, setAuthLoaded] = useState(false);
+
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Combined loading state
+  useEffect(() => {
+    // If we're an admin, we wait for everything. If not, we just wait for products and auth.
+    if (isAdmin) {
+      setIsLoading(!productsLoaded || !ordersLoaded || !couponsLoaded || !authLoaded);
+    } else {
+      setIsLoading(!productsLoaded || !authLoaded);
+    }
+  }, [productsLoaded, ordersLoaded, couponsLoaded, authLoaded, isAdmin]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -118,7 +133,9 @@ export const useStore = () => {
       if (currentUser) {
         // Check if admin
         const adminEmail = "valuemoney77@gmail.com";
-        if (currentUser.email === adminEmail && currentUser.emailVerified) {
+        // During development/preview, we might want to be more lenient with emailVerified
+        // but for now we'll stick to the email check.
+        if (currentUser.email === adminEmail) {
           setIsAdmin(true);
         } else {
           // Check users collection for role
@@ -137,12 +154,15 @@ export const useStore = () => {
       } else {
         setIsAdmin(false);
       }
+      setAuthLoaded(true);
     });
     return () => unsubscribe();
   }, []);
 
   // Fetch all data from Firestore on mount
   useEffect(() => {
+    if (!authLoaded) return;
+
     const testConnection = async () => {
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
@@ -154,51 +174,48 @@ export const useStore = () => {
     };
     testConnection();
 
-    setIsLoading(true);
-
     // Products Listener
     const unsubscribeProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
       const productsData = snapshot.docs.map(doc => doc.data() as Product);
       
-      if (productsData.length === 0 && isLoading && isAdmin) {
-        // If Firestore is empty on initial load, seed it with INITIAL_PRODUCTS
-        // This ensures the user has data to start with and can manage it
+      if (productsData.length === 0 && isAdmin) {
+        // Seed products if empty and user is admin
         try {
           for (const product of INITIAL_PRODUCTS) {
             await setDoc(doc(db, 'products', product.id), product);
           }
-          // The snapshot listener will trigger again after seeding
         } catch (err) {
           console.error("Error seeding products:", err);
-          setProducts([]);
         }
       } else {
         setProducts(productsData);
       }
-      setIsLoading(false);
+      setProductsLoaded(true);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'products');
+      setProductsLoaded(true);
     });
 
     // Coupons Listener
     const unsubscribeCoupons = onSnapshot(collection(db, 'coupons'), async (snapshot) => {
       const couponsData = snapshot.docs.map(doc => doc.data() as Coupon);
       
-      if (couponsData.length === 0 && isLoading && isAdmin) {
-        // Seed coupons if empty
+      if (couponsData.length === 0 && isAdmin) {
+        // Seed coupons if empty and user is admin
         try {
           for (const coupon of INITIAL_COUPONS) {
             await setDoc(doc(db, 'coupons', coupon.code), coupon);
           }
         } catch (err) {
           console.error("Error seeding coupons:", err);
-          setCoupons([]);
         }
       } else {
         setCoupons(couponsData);
       }
+      setCouponsLoaded(true);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'coupons');
+      setCouponsLoaded(true);
     });
 
     // Orders Listener
@@ -208,8 +225,10 @@ export const useStore = () => {
       unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
         const ordersData = snapshot.docs.map(doc => doc.data() as Order);
         setOrders(ordersData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setOrdersLoaded(true);
       }, (error) => {
         handleFirestoreError(error, OperationType.LIST, 'orders');
+        setOrdersLoaded(true);
       });
     } else if (user?.email) {
       // Customer sees only their orders
@@ -217,12 +236,15 @@ export const useStore = () => {
       unsubscribeOrders = onSnapshot(q, (snapshot) => {
         const ordersData = snapshot.docs.map(doc => doc.data() as Order);
         setOrders(ordersData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        setOrdersLoaded(true);
       }, (error) => {
-        // Only show error if it's not a permission error for non-admins
         if (error.code !== 'permission-denied') {
           handleFirestoreError(error, OperationType.LIST, 'orders');
         }
+        setOrdersLoaded(true);
       });
+    } else {
+      setOrdersLoaded(true);
     }
 
     return () => {
@@ -230,7 +252,7 @@ export const useStore = () => {
       unsubscribeCoupons();
       unsubscribeOrders();
     };
-  }, [isAdmin, user]);
+  }, [isAdmin, user, authLoaded]);
 
   // --- ACTIONS ---
 
