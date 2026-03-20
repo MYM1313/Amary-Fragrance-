@@ -29,7 +29,7 @@ const AdminCoupons: React.FC = () => {
     <div className="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
         <div className="flex items-center gap-4">
-          <Link to="/admin" className="p-2 hover:bg-brand-light rounded-full transition-colors">
+          <Link to="/manage-fragrance" className="p-2 hover:bg-brand-light rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <div>

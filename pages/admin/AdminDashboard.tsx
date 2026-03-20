@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useGlobalStore } from '../../StoreContext';
-import { Package, ShoppingBag, TrendingUp, Clock, ChevronRight, LayoutDashboard, Settings, Tag } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, Clock, ChevronRight, LayoutDashboard, Settings, Tag, Database, CheckCircle2, XCircle } from 'lucide-react';
 import { motion } from 'motion/react';
+import { isSupabaseConfigured } from '../../src/lib/supabase';
 
 const AdminDashboard: React.FC = () => {
   const { products, orders, coupons } = useGlobalStore();
@@ -20,7 +21,20 @@ const AdminDashboard: React.FC = () => {
     <div className="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
         <div>
-          <h1 className="font-serif text-4xl md:text-5xl mb-2">Admin Panel</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="font-serif text-4xl md:text-5xl">Admin Panel</h1>
+            {isSupabaseConfigured ? (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
+                <CheckCircle2 className="w-3 h-3" />
+                DB Connected
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 text-[10px] font-bold uppercase tracking-widest">
+                <XCircle className="w-3 h-3" />
+                DB Offline
+              </div>
+            )}
+          </div>
           <p className="text-brand-muted font-sans tracking-wide">Manage your fragrance empire</p>
         </div>
         <div className="flex items-center gap-4 p-4 bg-brand-dark text-white rounded-2xl">

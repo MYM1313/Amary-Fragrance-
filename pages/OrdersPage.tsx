@@ -141,13 +141,17 @@ const OrdersPage: React.FC = () => {
                 <div className="p-4 bg-brand-light rounded-2xl space-y-2">
                   <p className="text-sm font-bold">{order.customer.name}</p>
                   <p className="text-xs text-brand-muted leading-relaxed">
-                    {order.customer.address}<br />
+                    {order.customer.address}{order.customer.landmark ? `, ${order.customer.landmark}` : ''}<br />
                     {order.customer.city}, {order.customer.state} - {order.customer.pincode}<br />
-                    {order.customer.phone}
+                    {order.customer.phone} | {order.customer.email}
                   </p>
                   <div className="pt-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-brand-gold font-bold">
                     <Truck className="w-3 h-3" />
                     <span>{order.deliveryType} Delivery</span>
+                  </div>
+                  <div className="pt-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-brand-gold font-bold">
+                    <span className="w-3 h-3 flex items-center justify-center">$</span>
+                    <span>Payment: {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online'}</span>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Product, CartItem, Order, Coupon } from './types';
 import { INITIAL_PRODUCTS, INITIAL_COUPONS } from './data';
+import { supabase, isSupabaseConfigured } from './src/lib/supabase';
 
 // --- STORE LOGIC ---
 
@@ -46,6 +47,42 @@ export const useStore = () => {
     localStorage.setItem('amary_coupons', JSON.stringify(coupons));
   }, [coupons]);
 
+  // Fetch orders from Supabase on mount
+  useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      const fetchOrders = async () => {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (!error && data) {
+          const mappedOrders: Order[] = data.map(dbOrder => ({
+            id: dbOrder.id,
+            items: dbOrder.items,
+            total: dbOrder.total,
+            status: dbOrder.status,
+            customer: {
+              name: dbOrder.customer_name,
+              phone: dbOrder.customer_phone,
+              email: dbOrder.customer_email,
+              address: dbOrder.customer_address,
+              landmark: dbOrder.customer_landmark || undefined,
+              city: dbOrder.customer_city,
+              state: dbOrder.customer_state,
+              pincode: dbOrder.customer_pincode
+            },
+            deliveryType: dbOrder.delivery_type,
+            paymentMethod: dbOrder.payment_method,
+            createdAt: dbOrder.created_at
+          }));
+          setOrders(mappedOrders);
+        }
+      };
+      fetchOrders();
+    }
+  }, []);
+
   // --- ACTIONS ---
 
   const addToCart = (product: Product, quantity: number = 1, variant?: string) => {
@@ -77,19 +114,55 @@ export const useStore = () => {
 
   const clearCart = () => setCart([]);
 
-  const placeOrder = (orderData: Omit<Order, 'id' | 'createdAt' | 'status'>) => {
+  const placeOrder = async (orderData: Omit<Order, 'id' | 'createdAt' | 'status'>) => {
     const newOrder: Order = {
       ...orderData,
       id: `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       createdAt: new Date().toISOString(),
       status: 'pending'
     };
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('orders').insert([{
+          id: newOrder.id,
+          items: newOrder.items,
+          total: newOrder.total,
+          status: newOrder.status,
+          customer_name: newOrder.customer.name,
+          customer_phone: newOrder.customer.phone,
+          customer_email: newOrder.customer.email,
+          customer_address: newOrder.customer.address,
+          customer_landmark: newOrder.customer.landmark || null,
+          customer_city: newOrder.customer.city,
+          customer_state: newOrder.customer.state,
+          customer_pincode: newOrder.customer.pincode,
+          delivery_type: newOrder.deliveryType,
+          payment_method: newOrder.paymentMethod,
+          created_at: newOrder.createdAt
+        }]);
+        
+        if (error) {
+          console.error("Supabase insert error:", error);
+        }
+      } catch (err) {
+        console.error("Supabase insert exception:", err);
+      }
+    }
+
     setOrders(prev => [newOrder, ...prev]);
     clearCart();
     return newOrder;
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('orders').update({ status }).eq('id', orderId);
+      } catch (err) {
+        console.error("Supabase update exception:", err);
+      }
+    }
     setOrders(prev => prev.map(order => 
       order.id === orderId ? { ...order, status } : order
     ));

@@ -12,12 +12,15 @@ const CheckoutPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
+    email: '',
     address: '',
+    landmark: '',
     city: '',
     state: '',
     pincode: ''
   });
   const [deliveryType, setDeliveryType] = useState<'standard' | 'express'>('standard');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [isPlacing, setIsPlacing] = useState(false);
@@ -47,11 +50,12 @@ const CheckoutPage: React.FC = () => {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const order = placeOrder({
+    const order = await placeOrder({
       items: cart,
       total,
       customer: formData,
-      deliveryType
+      deliveryType,
+      paymentMethod
     });
     
     setOrderSuccess(order.id);
@@ -119,7 +123,7 @@ const CheckoutPage: React.FC = () => {
                 <h2 className="font-serif text-3xl mb-6">Shipping Address</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Full Name</label>
+                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Full Name *</label>
                     <input 
                       type="text" name="name" value={formData.name} onChange={handleInputChange}
                       className="w-full px-4 py-3 rounded-xl border border-brand-goldLight/30 focus:border-brand-gold outline-none transition-all"
@@ -127,15 +131,31 @@ const CheckoutPage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Phone Number</label>
+                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Email *</label>
+                    <input 
+                      type="email" name="email" value={formData.email} onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border border-brand-goldLight/30 focus:border-brand-gold outline-none transition-all"
+                      placeholder="john@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Phone Number *</label>
                     <input 
                       type="tel" name="phone" value={formData.phone} onChange={handleInputChange}
                       className="w-full px-4 py-3 rounded-xl border border-brand-goldLight/30 focus:border-brand-gold outline-none transition-all"
                       placeholder="+1 234 567 890"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Landmark (Optional)</label>
+                    <input 
+                      type="text" name="landmark" value={formData.landmark} onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border border-brand-goldLight/30 focus:border-brand-gold outline-none transition-all"
+                      placeholder="Near Central Park"
+                    />
+                  </div>
                   <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Address</label>
+                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Address *</label>
                     <input 
                       type="text" name="address" value={formData.address} onChange={handleInputChange}
                       className="w-full px-4 py-3 rounded-xl border border-brand-goldLight/30 focus:border-brand-gold outline-none transition-all"
@@ -143,7 +163,7 @@ const CheckoutPage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">City</label>
+                    <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">City *</label>
                     <input 
                       type="text" name="city" value={formData.city} onChange={handleInputChange}
                       className="w-full px-4 py-3 rounded-xl border border-brand-goldLight/30 focus:border-brand-gold outline-none transition-all"
@@ -152,7 +172,7 @@ const CheckoutPage: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">State</label>
+                      <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">State *</label>
                       <input 
                         type="text" name="state" value={formData.state} onChange={handleInputChange}
                         className="w-full px-4 py-3 rounded-xl border border-brand-goldLight/30 focus:border-brand-gold outline-none transition-all"
@@ -160,7 +180,7 @@ const CheckoutPage: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Pincode</label>
+                      <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Pincode *</label>
                       <input 
                         type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
                         className="w-full px-4 py-3 rounded-xl border border-brand-goldLight/30 focus:border-brand-gold outline-none transition-all"
@@ -171,10 +191,10 @@ const CheckoutPage: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setStep(2)}
-                  disabled={!formData.name || !formData.address || !formData.phone}
+                  disabled={!formData.name || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.state || !formData.pincode}
                   className="w-full py-4 bg-brand-dark text-white rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-brand-gold transition-all disabled:opacity-50"
                 >
-                  Continue to Delivery
+                  Continue to Delivery & Payment
                 </button>
               </motion.div>
             )}
@@ -187,38 +207,73 @@ const CheckoutPage: React.FC = () => {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-8"
               >
-                <h2 className="font-serif text-3xl mb-6">Delivery Options</h2>
-                <div className="space-y-4">
-                  <button 
-                    onClick={() => setDeliveryType('standard')}
-                    className={`w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${
-                      deliveryType === 'standard' ? 'border-brand-gold bg-brand-goldLight/10' : 'border-brand-goldLight/20 hover:border-brand-gold'
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${deliveryType === 'standard' ? 'border-brand-gold' : 'border-brand-muted'}`}>
-                      {deliveryType === 'standard' && <div className="w-3 h-3 rounded-full bg-brand-gold" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold">Standard Delivery</p>
-                      <p className="text-xs text-brand-muted">3-5 Business Days</p>
-                    </div>
-                    <p className="font-bold">{subtotal > 500 ? 'FREE' : '$25'}</p>
-                  </button>
-                  <button 
-                    onClick={() => setDeliveryType('express')}
-                    className={`w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${
-                      deliveryType === 'express' ? 'border-brand-gold bg-brand-goldLight/10' : 'border-brand-goldLight/20 hover:border-brand-gold'
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${deliveryType === 'express' ? 'border-brand-gold' : 'border-brand-muted'}`}>
-                      {deliveryType === 'express' && <div className="w-3 h-3 rounded-full bg-brand-gold" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold">Express Delivery</p>
-                      <p className="text-xs text-brand-muted">1-2 Business Days</p>
-                    </div>
-                    <p className="font-bold">$50</p>
-                  </button>
+                <h2 className="font-serif text-3xl mb-6">Delivery & Payment Options</h2>
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-xs uppercase tracking-widest text-brand-muted font-bold">Delivery Method</h3>
+                    <button 
+                      onClick={() => setDeliveryType('standard')}
+                      className={`w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${
+                        deliveryType === 'standard' ? 'border-brand-gold bg-brand-goldLight/10' : 'border-brand-goldLight/20 hover:border-brand-gold'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${deliveryType === 'standard' ? 'border-brand-gold' : 'border-brand-muted'}`}>
+                        {deliveryType === 'standard' && <div className="w-3 h-3 rounded-full bg-brand-gold" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold">Standard Delivery</p>
+                        <p className="text-xs text-brand-muted">3-5 Business Days</p>
+                      </div>
+                      <p className="font-bold">{subtotal > 500 ? 'FREE' : '$25'}</p>
+                    </button>
+                    <button 
+                      onClick={() => setDeliveryType('express')}
+                      className={`w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${
+                        deliveryType === 'express' ? 'border-brand-gold bg-brand-goldLight/10' : 'border-brand-goldLight/20 hover:border-brand-gold'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${deliveryType === 'express' ? 'border-brand-gold' : 'border-brand-muted'}`}>
+                        {deliveryType === 'express' && <div className="w-3 h-3 rounded-full bg-brand-gold" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold">Express Delivery</p>
+                        <p className="text-xs text-brand-muted">1-2 Business Days</p>
+                      </div>
+                      <p className="font-bold">$50</p>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xs uppercase tracking-widest text-brand-muted font-bold">Payment Method</h3>
+                    <button 
+                      onClick={() => setPaymentMethod('cod')}
+                      className={`w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${
+                        paymentMethod === 'cod' ? 'border-brand-gold bg-brand-goldLight/10' : 'border-brand-goldLight/20 hover:border-brand-gold'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'cod' ? 'border-brand-gold' : 'border-brand-muted'}`}>
+                        {paymentMethod === 'cod' && <div className="w-3 h-3 rounded-full bg-brand-gold" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold">Cash on Delivery</p>
+                        <p className="text-xs text-brand-muted">Pay when you receive</p>
+                      </div>
+                    </button>
+                    <button 
+                      onClick={() => setPaymentMethod('online')}
+                      className={`w-full p-6 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${
+                        paymentMethod === 'online' ? 'border-brand-gold bg-brand-goldLight/10' : 'border-brand-goldLight/20 hover:border-brand-gold'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'online' ? 'border-brand-gold' : 'border-brand-muted'}`}>
+                        {paymentMethod === 'online' && <div className="w-3 h-3 rounded-full bg-brand-gold" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold">Online Payment</p>
+                        <p className="text-xs text-brand-muted">Credit Card, UPI, Net Banking</p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
                 <div className="flex gap-4">
                   <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 border-brand-dark rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-brand-dark hover:text-white transition-all">
@@ -248,18 +303,19 @@ const CheckoutPage: React.FC = () => {
                   </div>
                   <p className="text-sm font-bold">{formData.name}</p>
                   <p className="text-sm text-brand-muted leading-relaxed">
-                    {formData.address}<br />
+                    {formData.address}{formData.landmark ? `, ${formData.landmark}` : ''}<br />
                     {formData.city}, {formData.state} - {formData.pincode}<br />
-                    {formData.phone}
+                    {formData.phone} | {formData.email}
                   </p>
                 </div>
 
                 <div className="p-6 bg-white border border-brand-goldLight/20 rounded-2xl space-y-4">
                   <div className="flex justify-between items-start">
-                    <h3 className="text-xs uppercase tracking-widest text-brand-muted font-bold">Delivery Method</h3>
+                    <h3 className="text-xs uppercase tracking-widest text-brand-muted font-bold">Delivery & Payment</h3>
                     <button onClick={() => setStep(2)} className="text-xs text-brand-gold underline">Edit</button>
                   </div>
                   <p className="text-sm font-bold capitalize">{deliveryType} Delivery</p>
+                  <p className="text-sm text-brand-muted capitalize">Payment: {paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</p>
                 </div>
 
                 <div className="flex gap-4">

@@ -163,10 +163,14 @@ const AdminOrders: React.FC = () => {
                         <Phone className="w-4 h-4 text-brand-gold" />
                         <span>{selectedOrder.customer.phone}</span>
                       </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className="w-4 h-4 text-brand-gold flex items-center justify-center font-bold">@</span>
+                        <span>{selectedOrder.customer.email}</span>
+                      </div>
                       <div className="flex items-start gap-3 text-sm">
                         <MapPin className="w-4 h-4 text-brand-gold mt-1" />
                         <span className="leading-relaxed">
-                          {selectedOrder.customer.address}<br />
+                          {selectedOrder.customer.address}{selectedOrder.customer.landmark ? `, ${selectedOrder.customer.landmark}` : ''}<br />
                           {selectedOrder.customer.city}, {selectedOrder.customer.state} - {selectedOrder.customer.pincode}
                         </span>
                       </div>
@@ -183,6 +187,10 @@ const AdminOrders: React.FC = () => {
                       <div className="flex justify-between">
                         <span className="text-brand-muted">Delivery</span>
                         <span className="font-bold capitalize">{selectedOrder.deliveryType}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-brand-muted">Payment</span>
+                        <span className="font-bold capitalize">{selectedOrder.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online'}</span>
                       </div>
                       <div className="pt-4 border-t border-brand-goldLight/10 flex justify-between text-lg font-bold">
                         <span>Total</span>

@@ -32,12 +32,15 @@ export interface Order {
   customer: {
     name: string;
     phone: string;
+    email: string;
     address: string;
+    landmark?: string;
     city: string;
     state: string;
     pincode: string;
   };
   deliveryType: 'standard' | 'express';
+  paymentMethod: 'cod' | 'online';
   createdAt: string;
 }
 
