@@ -10,6 +10,7 @@ import {
   deleteDoc, 
   onSnapshot, 
   query, 
+  where,
   orderBy, 
   getDoc,
   getDocs,
@@ -200,15 +201,27 @@ export const useStore = () => {
       handleFirestoreError(error, OperationType.LIST, 'coupons');
     });
 
-    // Orders Listener (Only if admin)
+    // Orders Listener
     let unsubscribeOrders = () => {};
     if (isAdmin) {
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-      unsubscribeOrders = onSnapshot(q, (snapshot) => {
+      // Admin sees all orders
+      unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
         const ordersData = snapshot.docs.map(doc => doc.data() as Order);
-        setOrders(ordersData);
+        setOrders(ordersData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       }, (error) => {
         handleFirestoreError(error, OperationType.LIST, 'orders');
+      });
+    } else if (user?.email) {
+      // Customer sees only their orders
+      const q = query(collection(db, 'orders'), where('customer.email', '==', user.email));
+      unsubscribeOrders = onSnapshot(q, (snapshot) => {
+        const ordersData = snapshot.docs.map(doc => doc.data() as Order);
+        setOrders(ordersData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      }, (error) => {
+        // Only show error if it's not a permission error for non-admins
+        if (error.code !== 'permission-denied') {
+          handleFirestoreError(error, OperationType.LIST, 'orders');
+        }
       });
     }
 
@@ -217,7 +230,7 @@ export const useStore = () => {
       unsubscribeCoupons();
       unsubscribeOrders();
     };
-  }, [isAdmin]);
+  }, [isAdmin, user]);
 
   // --- ACTIONS ---
 

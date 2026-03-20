@@ -70,7 +70,7 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.token.email == resource.data.customer.email);
       allow create: if true; // Allow anyone to place an order
       allow update, delete: if isAdmin();
     }
