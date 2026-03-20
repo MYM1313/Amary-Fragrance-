@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useGlobalStore } from '../StoreContext';
 import { Search, Filter, ChevronDown, ShoppingBag } from 'lucide-react';
@@ -13,6 +13,7 @@ const ShopPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const categories = useMemo(() => ['All', ...new Set(products.map(p => p.category))], [products]);
+  const maxPrice = useMemo(() => Math.max(500, ...products.map(p => p.price)), [products]);
 
   const filteredProducts = useMemo(() => {
     return products
@@ -29,6 +30,11 @@ const ShopPage: React.FC = () => {
         return 0;
       });
   }, [products, searchQuery, selectedCategory, sortBy, priceRange]);
+
+  // Update price range when maxPrice changes
+  useEffect(() => {
+    setPriceRange([0, maxPrice]);
+  }, [maxPrice]);
 
   if (isLoading) {
     return (
@@ -114,7 +120,7 @@ const ShopPage: React.FC = () => {
                   <input 
                     type="range" 
                     min="0" 
-                    max="500" 
+                    max={maxPrice} 
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
                     className="w-full accent-brand-gold"

@@ -52,35 +52,43 @@ interface FirestoreErrorInfo {
   }
 }
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
-
 // --- STORE LOGIC ---
 
 export const useStore = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+  };
+
+  const clearToast = () => setToast(null);
+
+  const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+    const errInfo: FirestoreErrorInfo = {
+      error: error instanceof Error ? error.message : String(error),
+      authInfo: {
+        userId: auth.currentUser?.uid || '',
+        email: auth.currentUser?.email || '',
+        emailVerified: auth.currentUser?.emailVerified || false,
+        isAnonymous: auth.currentUser?.isAnonymous || false,
+        tenantId: auth.currentUser?.tenantId || '',
+        providerInfo: auth.currentUser?.providerData.map(provider => ({
+          providerId: provider.providerId,
+          displayName: provider.displayName || '',
+          email: provider.email || '',
+          photoUrl: provider.photoURL || ''
+        })) || []
+      },
+      operationType,
+      path
+    };
+    console.error('Firestore Error: ', JSON.stringify(errInfo));
+    showToast(`Error: ${errInfo.error}`, 'error');
+    throw new Error(JSON.stringify(errInfo));
+  };
   
   // Products
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -148,9 +156,22 @@ export const useStore = () => {
     setIsLoading(true);
 
     // Products Listener
-    const unsubscribeProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+    const unsubscribeProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
       const productsData = snapshot.docs.map(doc => doc.data() as Product);
-      if (productsData.length > 0) {
+      
+      if (productsData.length === 0 && isLoading && isAdmin) {
+        // If Firestore is empty on initial load, seed it with INITIAL_PRODUCTS
+        // This ensures the user has data to start with and can manage it
+        try {
+          for (const product of INITIAL_PRODUCTS) {
+            await setDoc(doc(db, 'products', product.id), product);
+          }
+          // The snapshot listener will trigger again after seeding
+        } catch (err) {
+          console.error("Error seeding products:", err);
+          setProducts([]);
+        }
+      } else {
         setProducts(productsData);
       }
       setIsLoading(false);
@@ -159,9 +180,20 @@ export const useStore = () => {
     });
 
     // Coupons Listener
-    const unsubscribeCoupons = onSnapshot(collection(db, 'coupons'), (snapshot) => {
+    const unsubscribeCoupons = onSnapshot(collection(db, 'coupons'), async (snapshot) => {
       const couponsData = snapshot.docs.map(doc => doc.data() as Coupon);
-      if (couponsData.length > 0) {
+      
+      if (couponsData.length === 0 && isLoading && isAdmin) {
+        // Seed coupons if empty
+        try {
+          for (const coupon of INITIAL_COUPONS) {
+            await setDoc(doc(db, 'coupons', coupon.code), coupon);
+          }
+        } catch (err) {
+          console.error("Error seeding coupons:", err);
+          setCoupons([]);
+        }
+      } else {
         setCoupons(couponsData);
       }
     }, (error) => {
@@ -228,6 +260,7 @@ export const useStore = () => {
 
     try {
       await setDoc(doc(db, 'orders', newOrder.id), newOrder);
+      showToast('Order placed successfully!');
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `orders/${newOrder.id}`);
     }
@@ -239,6 +272,7 @@ export const useStore = () => {
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status });
+      showToast(`Order status updated to ${status}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
     }
@@ -250,6 +284,7 @@ export const useStore = () => {
 
     try {
       await setDoc(doc(db, 'products', id), newProduct);
+      showToast('Product added to inventory');
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `products/${id}`);
     }
@@ -258,6 +293,7 @@ export const useStore = () => {
   const updateProduct = async (updatedProduct: Product) => {
     try {
       await setDoc(doc(db, 'products', updatedProduct.id), updatedProduct);
+      showToast('Product updated successfully');
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `products/${updatedProduct.id}`);
     }
@@ -266,6 +302,7 @@ export const useStore = () => {
   const deleteProduct = async (productId: string) => {
     try {
       await deleteDoc(doc(db, 'products', productId));
+      showToast('Product removed from inventory');
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `products/${productId}`);
     }
@@ -274,6 +311,7 @@ export const useStore = () => {
   const addCoupon = async (coupon: Coupon) => {
     try {
       await setDoc(doc(db, 'coupons', coupon.code), coupon);
+      showToast('Coupon created successfully');
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `coupons/${coupon.code}`);
     }
@@ -286,6 +324,7 @@ export const useStore = () => {
     const newStatus = !coupon.isActive;
     try {
       await updateDoc(doc(db, 'coupons', code), { isActive: newStatus });
+      showToast(`Coupon ${code} ${newStatus ? 'activated' : 'deactivated'}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `coupons/${code}`);
     }
@@ -294,6 +333,7 @@ export const useStore = () => {
   const deleteCoupon = async (code: string) => {
     try {
       await deleteDoc(doc(db, 'coupons', code));
+      showToast('Coupon deleted');
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `coupons/${code}`);
     }
@@ -303,10 +343,18 @@ export const useStore = () => {
   const loginAdmin = async (password: string) => {
     const adminEmail = "valuemoney77@gmail.com";
     try {
-      await signInWithEmailAndPassword(auth, adminEmail, password);
-      return true;
+      const result = await signInWithEmailAndPassword(auth, adminEmail, password);
+      if (result.user.emailVerified) {
+        setIsAdmin(true);
+        showToast('Welcome back, Admin');
+        return true;
+      } else {
+        showToast('Please verify your email to access admin features', 'error');
+        return false;
+      }
     } catch (err) {
       console.error("Login failed:", err);
+      showToast('Invalid password or authentication error', 'error');
       return false;
     }
   };
@@ -314,6 +362,8 @@ export const useStore = () => {
   const logoutAdmin = async () => {
     try {
       await signOut(auth);
+      setIsAdmin(false);
+      showToast('Logged out successfully');
     } catch (err) {
       console.error("Logout failed:", err);
     }
@@ -325,6 +375,8 @@ export const useStore = () => {
     cart,
     orders,
     coupons,
+    toast,
+    clearToast,
     isAdminAuthenticated: isAdmin,
     loginAdmin,
     logoutAdmin,

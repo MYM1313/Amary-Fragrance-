@@ -1,44 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import SectionTitle from './SectionTitle.tsx';
-import { Fragment } from '../types.ts';
+import { useGlobalStore } from '../StoreContext.tsx';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const fragments: Fragment[] = [
-  {
-    id: '1',
-    volume: '',
-    title: 'Umberwoods',
-    subtitle: 'Deep woods, warm resin, quiet depth',
-    category: '',
-    image: 'https://ik.imagekit.io/jabzmiuta/Whisk_b73d334af45d4abb6e642f6990847ca5dr.jpeg',
-  },
-  {
-    id: '2',
-    volume: '',
-    title: 'Desert Sand',
-    subtitle: 'Sun-warmed minerals and dry air',
-    category: '',
-    image: 'https://ik.imagekit.io/jabzmiuta/Whisk_ed08ba2c496f212b43c4c180125164dedr.jpeg',
-  },
-  {
-    id: '3',
-    volume: '',
-    title: 'Vanilla Drift',
-    subtitle: 'Soft sweetness carried on air',
-    category: '',
-    image: 'https://ik.imagekit.io/jabzmiuta/Whisk_626f487ac2979c990bd4d5ba4c76701adr.jpeg',
-  },
-  {
-    id: '4',
-    volume: '',
-    title: 'Saffron Mist',
-    subtitle: 'Spiced warmth in a gentle haze',
-    category: '',
-    image: 'https://ik.imagekit.io/jabzmiuta/Whisk_abc86ecd06687cda4874764be9a3edfadr.jpeg',
-  },
-];
-
 const Fragments: React.FC = () => {
+  const { products } = useGlobalStore();
+  
+  // Map products to fragments for the home page display
+  const fragments = useMemo(() => {
+    if (products.length === 0) return [];
+    return products.slice(0, 6).map(p => ({
+      id: p.id,
+      volume: '',
+      title: p.name,
+      subtitle: p.tagline,
+      category: p.category,
+      image: p.image
+    }));
+  }, [products]);
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isInView, setIsInView] = useState(false);
@@ -52,7 +32,7 @@ const Fragments: React.FC = () => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsInView(entry.isIntersecting);
-        if (entry.isIntersecting && !hasTriggeredRef.current) {
+        if (entry.isIntersecting && !hasTriggeredRef.current && fragments.length > 0) {
           hasTriggeredRef.current = true;
           // Trigger immediate swipe (400ms)
           setTimeout(() => {
@@ -64,16 +44,16 @@ const Fragments: React.FC = () => {
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [fragments.length]);
 
   // Continuous auto-swipe logic every 3s when in view
   useEffect(() => {
-    if (isPaused || !isInView) return;
+    if (isPaused || !isInView || fragments.length === 0) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % fragments.length);
     }, 3000);
     return () => clearInterval(interval);
-  }, [isPaused, activeIndex, isInView]);
+  }, [isPaused, activeIndex, isInView, fragments.length]);
 
   // Sync state with physical scroll position (Programmatic Scroll)
   useEffect(() => {
