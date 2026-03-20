@@ -196,11 +196,34 @@ export const useStore = () => {
     setCoupons(prev => prev.filter(c => c.code !== code));
   };
 
+  // Admin Auth
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('amary_admin_auth') === 'true';
+  });
+
+  const loginAdmin = (password: string) => {
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
+    if (password === adminPassword) {
+      setIsAdminAuthenticated(true);
+      localStorage.setItem('amary_admin_auth', 'true');
+      return true;
+    }
+    return false;
+  };
+
+  const logoutAdmin = () => {
+    setIsAdminAuthenticated(false);
+    localStorage.removeItem('amary_admin_auth');
+  };
+
   return {
     products,
     cart,
     orders,
     coupons,
+    isAdminAuthenticated,
+    loginAdmin,
+    logoutAdmin,
     addToCart,
     removeFromCart,
     updateCartQuantity,

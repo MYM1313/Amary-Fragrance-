@@ -1,12 +1,45 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useGlobalStore } from '../../StoreContext';
-import { Package, ShoppingBag, TrendingUp, Clock, ChevronRight, LayoutDashboard, Settings, Tag, Database, CheckCircle2, XCircle } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, Clock, ChevronRight, LayoutDashboard, Settings, Tag, Database, CheckCircle2, XCircle, LogOut, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
-import { isSupabaseConfigured } from '../../src/lib/supabase';
+import { isSupabaseConfigured, supabase } from '../../src/lib/supabase';
 
 const AdminDashboard: React.FC = () => {
-  const { products, orders, coupons } = useGlobalStore();
+  const { products, orders, coupons, logoutAdmin } = useGlobalStore();
+  const navigate = useNavigate();
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleLogout = () => {
+    logoutAdmin();
+    navigate('/');
+  };
+
+  const testConnection = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      setTestStatus('error');
+      setErrorMessage('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Secrets.');
+      return;
+    }
+
+    setTestStatus('testing');
+    try {
+      // Try to fetch one row from orders to test connection
+      const { error } = await supabase.from('orders').select('id').limit(1);
+      
+      if (error) {
+        setTestStatus('error');
+        setErrorMessage(error.message);
+      } else {
+        setTestStatus('success');
+        setTimeout(() => setTestStatus('idle'), 3000);
+      }
+    } catch (err: any) {
+      setTestStatus('error');
+      setErrorMessage(err.message || 'An unexpected error occurred.');
+    }
+  };
 
   const stats = [
     { label: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-blue-600 bg-blue-50' },
@@ -23,25 +56,54 @@ const AdminDashboard: React.FC = () => {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="font-serif text-4xl md:text-5xl">Admin Panel</h1>
-            {isSupabaseConfigured ? (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
-                <CheckCircle2 className="w-3 h-3" />
-                DB Connected
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 text-[10px] font-bold uppercase tracking-widest">
-                <XCircle className="w-3 h-3" />
-                DB Offline
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {isSupabaseConfigured ? (
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
+                  <CheckCircle2 className="w-3 h-3" />
+                  DB Configured
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 text-[10px] font-bold uppercase tracking-widest">
+                  <XCircle className="w-3 h-3" />
+                  DB Offline
+                </div>
+              )}
+              
+              <button 
+                onClick={testConnection}
+                disabled={testStatus === 'testing'}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                  testStatus === 'success' ? 'bg-emerald-500 text-white border-emerald-500' :
+                  testStatus === 'error' ? 'bg-red-500 text-white border-red-500' :
+                  'bg-white text-brand-dark border-brand-goldLight/20 hover:border-brand-gold'
+                }`}
+              >
+                <RefreshCw className={`w-3 h-3 ${testStatus === 'testing' ? 'animate-spin' : ''}`} />
+                {testStatus === 'testing' ? 'Testing...' : 
+                 testStatus === 'success' ? 'Connection OK' : 
+                 testStatus === 'error' ? 'Test Failed' : 'Test Connection'}
+              </button>
+            </div>
           </div>
           <p className="text-brand-muted font-sans tracking-wide">Manage your fragrance empire</p>
+          {testStatus === 'error' && (
+            <p className="text-red-500 text-[10px] mt-2 font-bold uppercase tracking-widest">{errorMessage}</p>
+          )}
         </div>
-        <div className="flex items-center gap-4 p-4 bg-brand-dark text-white rounded-2xl">
-          <TrendingUp className="w-6 h-6 text-brand-gold" />
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Total Revenue</p>
-            <p className="text-xl font-bold">${totalRevenue.toLocaleString()}</p>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleLogout}
+            className="p-4 bg-white border border-brand-goldLight/20 text-brand-dark rounded-2xl hover:border-brand-gold transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+          <div className="flex items-center gap-4 p-4 bg-brand-dark text-white rounded-2xl">
+            <TrendingUp className="w-6 h-6 text-brand-gold" />
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Total Revenue</p>
+              <p className="text-xl font-bold">${totalRevenue.toLocaleString()}</p>
+            </div>
           </div>
         </div>
       </div>
