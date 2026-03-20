@@ -19,7 +19,6 @@ import AdminDashboard from './pages/admin/AdminDashboard.tsx';
 import AdminProducts from './pages/admin/AdminProducts.tsx';
 import AdminOrders from './pages/admin/AdminOrders.tsx';
 import AdminCoupons from './pages/admin/AdminCoupons.tsx';
-import AdminLogin from './pages/admin/AdminLogin.tsx';
 import { StoreProvider, useGlobalStore } from './StoreContext.tsx';
 
 const HomePage: React.FC = () => (
@@ -34,38 +33,6 @@ const HomePage: React.FC = () => (
 );
 
 const AdminRoutes: React.FC = () => {
-  const { isAdminAuthenticated, loginAdmin, isLoading } = useGlobalStore();
-  const [error, setError] = React.useState('');
-  const [isLoggingIn, setIsLoggingIn] = React.useState(false);
-
-  const handleLogin = async (password: string) => {
-    setIsLoggingIn(true);
-    setError('');
-    try {
-      const success = await loginAdmin(password);
-      if (!success) {
-        setError('Invalid password. Please try again.');
-      }
-    } catch (err) {
-      setError('An error occurred during login.');
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="w-12 h-12 border-4 border-brand-gold/20 border-t-brand-gold rounded-full animate-spin mb-4"></div>
-        <p className="font-serif text-xl text-brand-muted">Authenticating...</p>
-      </div>
-    );
-  }
-
-  if (!isAdminAuthenticated) {
-    return <AdminLogin onLogin={handleLogin} error={error} />;
-  }
-
   return (
     <div className="min-h-screen bg-slate-50">
       <Routes>

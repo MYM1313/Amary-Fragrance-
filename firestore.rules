@@ -66,18 +66,18 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
     }
 
     match /orders/{orderId} {
-      allow read: if isAdmin() || (isAuthenticated() && request.auth.token.email == resource.data.customer.email);
-      allow create: if true; // Allow anyone to place an order
-      allow update, delete: if isAdmin();
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
     }
 
     match /coupons/{couponCode} {
-      allow read: if true; // Allow anyone to check coupons
-      allow write: if isAdmin();
+      allow read: if true;
+      allow write: if true;
     }
 
     match /users/{userId} {

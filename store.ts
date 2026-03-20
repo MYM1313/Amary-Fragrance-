@@ -63,7 +63,7 @@ export const useStore = () => {
   const [authLoaded, setAuthLoaded] = useState(false);
 
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Combined loading state
