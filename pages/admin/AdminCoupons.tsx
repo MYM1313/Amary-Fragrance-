@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Coupon } from '../../types';
 
 const AdminCoupons: React.FC = () => {
-  const { coupons, addCoupon, toggleCoupon, deleteCoupon } = useGlobalStore();
+  const { coupons, addCoupon, toggleCoupon, deleteCoupon, isLoading } = useGlobalStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<Coupon>({
     code: '',
@@ -25,11 +25,20 @@ const AdminCoupons: React.FC = () => {
     setFormData({ code: '', discountPercent: 0, isActive: true });
   };
 
+  if (isLoading) {
+    return (
+      <div className="pt-40 pb-20 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-brand-gold/20 border-t-brand-gold rounded-full animate-spin mb-4"></div>
+        <p className="font-serif text-xl text-brand-muted">Loading coupons...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
         <div className="flex items-center gap-4">
-          <Link to="/manage-fragrance" className="p-2 hover:bg-brand-light rounded-full transition-colors">
+          <Link to="/admin" className="p-2 hover:bg-brand-light rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <div>

@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A fragrance product in the catalog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "tagline": { "type": "string" },
+        "image": { "type": "string" },
+        "accentColor": { "type": "string" },
+        "description": { "type": "string" },
+        "story": { "type": "string" },
+        "highlights": { "type": "array", "items": { "type": "string" } },
+        "details": { "type": "array", "items": { "type": "string" } },
+        "usage": { "type": "string" },
+        "gallery": { "type": "array", "items": { "type": "string" } },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "stock": { "type": "number" },
+        "variants": { "type": "array", "items": { "type": "string" } },
+        "isNew": { "type": "boolean" }
+      },
+      "required": ["id", "name", "price", "category", "stock"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "shipped", "out-for-delivery", "delivered"] },
+        "customer": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "email": { "type": "string" },
+            "address": { "type": "string" },
+            "landmark": { "type": "string" },
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "pincode": { "type": "string" }
+          }
+        },
+        "deliveryType": { "type": "string", "enum": ["standard", "express"] },
+        "paymentMethod": { "type": "string", "enum": ["cod", "online"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "items", "total", "status", "customer", "deliveryType", "paymentMethod", "createdAt"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "A promotional discount code",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "discountPercent": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["code", "discountPercent", "isActive"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user profile with roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Fragrance catalog"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders"
+    },
+    "/coupons/{couponCode}": {
+      "schema": "Coupon",
+      "description": "Discount codes"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    }
+  }
+}

@@ -3,38 +3,38 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useGlobalStore } from '../../StoreContext';
 import { Package, ShoppingBag, TrendingUp, Clock, ChevronRight, LayoutDashboard, Settings, Tag, Database, CheckCircle2, XCircle, LogOut, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
-import { isSupabaseConfigured, supabase } from '../../src/lib/supabase';
+import { db } from '../../firebase';
+import { collection, getDocs, limit, query } from 'firebase/firestore';
 
 const AdminDashboard: React.FC = () => {
-  const { products, orders, coupons, logoutAdmin } = useGlobalStore();
+  const { products, orders, coupons, logoutAdmin, isLoading } = useGlobalStore();
   const navigate = useNavigate();
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLogout = () => {
-    logoutAdmin();
+  const handleLogout = async () => {
+    await logoutAdmin();
     navigate('/');
   };
 
-  const testConnection = async () => {
-    if (!isSupabaseConfigured || !supabase) {
-      setTestStatus('error');
-      setErrorMessage('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Secrets.');
-      return;
-    }
+  if (isLoading) {
+    return (
+      <div className="pt-40 pb-20 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-brand-gold/20 border-t-brand-gold rounded-full animate-spin mb-4"></div>
+        <p className="font-serif text-xl text-brand-muted">Preparing your dashboard...</p>
+      </div>
+    );
+  }
 
+  const testConnection = async () => {
     setTestStatus('testing');
     try {
       // Try to fetch one row from orders to test connection
-      const { error } = await supabase.from('orders').select('id').limit(1);
+      const q = query(collection(db, 'orders'), limit(1));
+      await getDocs(q);
       
-      if (error) {
-        setTestStatus('error');
-        setErrorMessage(error.message);
-      } else {
-        setTestStatus('success');
-        setTimeout(() => setTestStatus('idle'), 3000);
-      }
+      setTestStatus('success');
+      setTimeout(() => setTestStatus('idle'), 3000);
     } catch (err: any) {
       setTestStatus('error');
       setErrorMessage(err.message || 'An unexpected error occurred.');
@@ -57,17 +57,10 @@ const AdminDashboard: React.FC = () => {
           <div className="flex items-center gap-3 mb-2">
             <h1 className="font-serif text-4xl md:text-5xl">Admin Panel</h1>
             <div className="flex items-center gap-2">
-              {isSupabaseConfigured ? (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
-                  <CheckCircle2 className="w-3 h-3" />
-                  DB Configured
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 text-[10px] font-bold uppercase tracking-widest">
-                  <XCircle className="w-3 h-3" />
-                  DB Offline
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-widest">
+                <CheckCircle2 className="w-3 h-3" />
+                Firebase Connected
+              </div>
               
               <button 
                 onClick={testConnection}

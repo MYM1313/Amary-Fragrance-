@@ -5,14 +5,14 @@ import { Search, Filter, ChevronDown, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const ShopPage: React.FC = () => {
-  const { products, addToCart } = useGlobalStore();
+  const { products, addToCart, isLoading } = useGlobalStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [showFilters, setShowFilters] = useState(false);
 
-  const categories = ['All', ...new Set(products.map(p => p.category))];
+  const categories = useMemo(() => ['All', ...new Set(products.map(p => p.category))], [products]);
 
   const filteredProducts = useMemo(() => {
     return products
@@ -26,9 +26,18 @@ const ShopPage: React.FC = () => {
       .sort((a, b) => {
         if (sortBy === 'price-low') return a.price - b.price;
         if (sortBy === 'price-high') return b.price - a.price;
-        return 0; // newest logic would need a date field, defaulting to original order
+        return 0;
       });
   }, [products, searchQuery, selectedCategory, sortBy, priceRange]);
+
+  if (isLoading) {
+    return (
+      <div className="pt-40 pb-20 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-brand-gold/20 border-t-brand-gold rounded-full animate-spin mb-4"></div>
+        <p className="font-serif text-xl text-brand-muted">Curating our collection...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-24 pb-16 px-4 md:px-8 max-w-7xl mx-auto">

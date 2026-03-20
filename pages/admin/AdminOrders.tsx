@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Order } from '../../types';
 
 const AdminOrders: React.FC = () => {
-  const { orders, updateOrderStatus } = useGlobalStore();
+  const { orders, updateOrderStatus, isLoading } = useGlobalStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -14,6 +14,15 @@ const AdminOrders: React.FC = () => {
     o.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
     o.customer.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="pt-40 pb-20 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-brand-gold/20 border-t-brand-gold rounded-full animate-spin mb-4"></div>
+        <p className="font-serif text-xl text-brand-muted">Loading orders...</p>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
