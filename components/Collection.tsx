@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import SectionTitle from './SectionTitle.tsx';
 import { Product } from '../types.ts';
 import { Instagram, ArrowRight, ArrowUpRight, Sparkle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const products: Product[] = [
   {
@@ -14,7 +15,10 @@ export const products: Product[] = [
     highlights: ["Sandalwood Base", "Hand-harvested Saffron", "Molecular Oud"],
     details: ["Extrait de Parfum", "High Longevity", "Unisex", "Italian Glass"],
     usage: "Apply to pulse points. Allow to settle.",
-    gallery: ['https://ik.imagekit.io/jabzmiuta/Gemini_Generated_Image_s7nc4as7nc4as7nc.png']
+    gallery: ['https://ik.imagekit.io/jabzmiuta/Gemini_Generated_Image_s7nc4as7nc4as7nc.png'],
+    price: 185,
+    category: 'Fragrance',
+    stock: 25
   },
   {
     id: '2',
@@ -26,7 +30,10 @@ export const products: Product[] = [
     highlights: ["Indian Jasmine", "Smoky Vanilla", "Bergamot"],
     details: ["Oil base", "High projection", "Velvet pack", "Artisanal"],
     usage: "Spray onto pulse points or hair brush.",
-    gallery: ['https://ik.imagekit.io/jabzmiuta/Gemini_Generated_Image_3wd4ul3wd4ul3wd4.png']
+    gallery: ['https://ik.imagekit.io/jabzmiuta/Gemini_Generated_Image_3wd4ul3wd4ul3wd4.png'],
+    price: 165,
+    category: 'Fragrance',
+    stock: 15
   },
   {
     id: '3',
@@ -38,7 +45,10 @@ export const products: Product[] = [
     highlights: ["Sea Salt", "Neroli", "White Amber"],
     details: ["Daytime", "Sparkling sillage", "Artisanal", "Pure Extract"],
     usage: "Layer for brightness.",
-    gallery: ['https://ik.imagekit.io/jabzmiuta/Gemini_Generated_Image_8bnshw8bnshw8bns.png']
+    gallery: ['https://ik.imagekit.io/jabzmiuta/Gemini_Generated_Image_8bnshw8bnshw8bns.png'],
+    price: 145,
+    category: 'Fragrance',
+    stock: 40
   },
   {
     id: '4',
@@ -50,7 +60,10 @@ export const products: Product[] = [
     highlights: ["Vetiver", "Cardamom", "Leather"],
     details: ["Robust", "Unisex", "Hand-stamped", "Sustainable"],
     usage: "Apply to neck and chest.",
-    gallery: ['https://ik.imagekit.io/jabzmiuta/Gemini_Generated_Image_fs97trfs97trfs97.png']
+    gallery: ['https://ik.imagekit.io/jabzmiuta/Gemini_Generated_Image_fs97trfs97trfs97.png'],
+    price: 195,
+    category: 'Fragrance',
+    stock: 10
   },
 ];
 

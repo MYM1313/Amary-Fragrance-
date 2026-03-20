@@ -12,6 +12,39 @@ export interface Product {
   details: string[];
   usage: string;
   gallery: string[];
+  price: number;
+  category: string;
+  stock: number;
+  variants?: string[];
+  isNew?: boolean;
+}
+
+export interface CartItem extends Product {
+  quantity: number;
+  selectedVariant?: string;
+}
+
+export interface Order {
+  id: string;
+  items: CartItem[];
+  total: number;
+  status: 'pending' | 'confirmed' | 'shipped' | 'out-for-delivery' | 'delivered';
+  customer: {
+    name: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
+  deliveryType: 'standard' | 'express';
+  createdAt: string;
+}
+
+export interface Coupon {
+  code: string;
+  discountPercent: number;
+  isActive: boolean;
 }
 
 export interface Fragment {

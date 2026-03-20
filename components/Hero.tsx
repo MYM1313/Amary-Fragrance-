@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Hero: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -72,17 +73,13 @@ const Hero: React.FC = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
-            <a 
-              href="#collections"
-              onClick={(e) => {
-                e.preventDefault();
-                document.querySelector('#collections')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+            <Link 
+              to="/shop"
               className="group inline-flex bg-brand-light text-brand-dark px-14 py-5 rounded-full items-center gap-4 hover:bg-brand-gold hover:text-white transition-all duration-700 shadow-2xl transform hover:scale-105 active:scale-95"
             >
               <span className="text-[10px] font-bold tracking-[0.3em] uppercase">Explore</span>
               <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-            </a>
+            </Link>
             
             <button className="text-[9px] font-bold tracking-[0.4em] text-white/40 hover:text-white uppercase transition-colors py-4 px-6 border-b border-white/0 hover:border-white/20">
               The Ritual
