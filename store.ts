@@ -1,57 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Product, CartItem, Order, Coupon } from './types';
 import { INITIAL_PRODUCTS, INITIAL_COUPONS } from './data';
-import { db, auth } from './firebase';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  query, 
-  where,
-  orderBy, 
-  getDoc,
-  getDocs,
-  getDocFromServer
-} from 'firebase/firestore';
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged,
-  User
-} from 'firebase/auth';
+import { supabase } from './supabaseClient';
 
-// --- ERROR HANDLING ---
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
 
 // --- STORE LOGIC ---
 
@@ -62,7 +13,7 @@ export const useStore = () => {
   const [couponsLoaded, setCouponsLoaded] = useState(false);
   const [authLoaded, setAuthLoaded] = useState(false);
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -81,30 +32,6 @@ export const useStore = () => {
   };
 
   const clearToast = () => setToast(null);
-
-  const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
-    const errInfo: FirestoreErrorInfo = {
-      error: error instanceof Error ? error.message : String(error),
-      authInfo: {
-        userId: auth.currentUser?.uid || '',
-        email: auth.currentUser?.email || '',
-        emailVerified: auth.currentUser?.emailVerified || false,
-        isAnonymous: auth.currentUser?.isAnonymous || false,
-        tenantId: auth.currentUser?.tenantId || '',
-        providerInfo: auth.currentUser?.providerData.map(provider => ({
-          providerId: provider.providerId,
-          displayName: provider.displayName || '',
-          email: provider.email || '',
-          photoUrl: provider.photoURL || ''
-        })) || []
-      },
-      operationType,
-      path
-    };
-    console.error('Firestore Error: ', JSON.stringify(errInfo));
-    showToast(`Error: ${errInfo.error}`, 'error');
-    throw new Error(JSON.stringify(errInfo));
-  };
   
   // Products
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -128,130 +55,53 @@ export const useStore = () => {
 
   // Auth Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        // Check if admin
-        const adminEmail = "valuemoney77@gmail.com";
-        // During development/preview, we might want to be more lenient with emailVerified
-        // but for now we'll stick to the email check.
-        if (currentUser.email === adminEmail) {
-          setIsAdmin(true);
-        } else {
-          // Check users collection for role
-          try {
-            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-            if (userDoc.exists() && userDoc.data().role === 'admin') {
-              setIsAdmin(true);
-            } else {
-              setIsAdmin(false);
-            }
-          } catch (err) {
-            console.error("Error checking admin role:", err);
-            setIsAdmin(false);
-          }
-        }
-      } else {
-        setIsAdmin(false);
-      }
+    // Supabase auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      setIsAdmin(true); // Admin panel is public, so we set isAdmin to true
       setAuthLoaded(true);
     });
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Fetch all data from Firestore on mount
+  // Fetch all data from Supabase on mount
   useEffect(() => {
     if (!authLoaded) return;
 
-    const testConnection = async () => {
+    const fetchData = async () => {
       try {
-        await getDocFromServer(doc(db, 'test', 'connection'));
-      } catch (error) {
-        if(error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration. ");
+        // Products
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select('*');
+        if (productsError) throw productsError;
+        setProducts(productsData || []);
+        setProductsLoaded(true);
+
+        // Coupons
+        const { data: couponsData, error: couponsError } = await supabase
+          .from('coupons')
+          .select('*');
+        if (couponsError) throw couponsError;
+        setCoupons(couponsData || []);
+        setCouponsLoaded(true);
+
+        // Orders
+        let query = supabase.from('orders').select('*');
+        if (!isAdmin) {
+          query = query.eq('customer->>email', user?.email);
         }
+        const { data: ordersData, error: ordersError } = await query;
+        if (ordersError) throw ordersError;
+        setOrders(ordersData || []);
+        setOrdersLoaded(true);
+      } catch (err) {
+        console.error("Error fetching data:", err);
       }
     };
-    testConnection();
-
-    // Products Listener
-    const unsubscribeProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
-      const productsData = snapshot.docs.map(doc => doc.data() as Product);
-      
-      if (productsData.length === 0 && isAdmin) {
-        // Seed products if empty and user is admin
-        try {
-          for (const product of INITIAL_PRODUCTS) {
-            await setDoc(doc(db, 'products', product.id), product);
-          }
-        } catch (err) {
-          console.error("Error seeding products:", err);
-        }
-      } else {
-        setProducts(productsData);
-      }
-      setProductsLoaded(true);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'products');
-      setProductsLoaded(true);
-    });
-
-    // Coupons Listener
-    const unsubscribeCoupons = onSnapshot(collection(db, 'coupons'), async (snapshot) => {
-      const couponsData = snapshot.docs.map(doc => doc.data() as Coupon);
-      
-      if (couponsData.length === 0 && isAdmin) {
-        // Seed coupons if empty and user is admin
-        try {
-          for (const coupon of INITIAL_COUPONS) {
-            await setDoc(doc(db, 'coupons', coupon.code), coupon);
-          }
-        } catch (err) {
-          console.error("Error seeding coupons:", err);
-        }
-      } else {
-        setCoupons(couponsData);
-      }
-      setCouponsLoaded(true);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'coupons');
-      setCouponsLoaded(true);
-    });
-
-    // Orders Listener
-    let unsubscribeOrders = () => {};
-    if (isAdmin) {
-      // Admin sees all orders
-      unsubscribeOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
-        const ordersData = snapshot.docs.map(doc => doc.data() as Order);
-        setOrders(ordersData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        setOrdersLoaded(true);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'orders');
-        setOrdersLoaded(true);
-      });
-    } else if (user?.email) {
-      // Customer sees only their orders
-      const q = query(collection(db, 'orders'), where('customer.email', '==', user.email));
-      unsubscribeOrders = onSnapshot(q, (snapshot) => {
-        const ordersData = snapshot.docs.map(doc => doc.data() as Order);
-        setOrders(ordersData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        setOrdersLoaded(true);
-      }, (error) => {
-        if (error.code !== 'permission-denied') {
-          handleFirestoreError(error, OperationType.LIST, 'orders');
-        }
-        setOrdersLoaded(true);
-      });
-    } else {
-      setOrdersLoaded(true);
-    }
-
-    return () => {
-      unsubscribeProducts();
-      unsubscribeCoupons();
-      unsubscribeOrders();
-    };
+    fetchData();
   }, [isAdmin, user, authLoaded]);
 
   // --- ACTIONS ---
@@ -294,10 +144,24 @@ export const useStore = () => {
     };
 
     try {
-      await setDoc(doc(db, 'orders', newOrder.id), newOrder);
+      const { error } = await supabase
+        .from('orders')
+        .insert([{
+          id: newOrder.id,
+          items: newOrder.items,
+          total: newOrder.total,
+          status: newOrder.status,
+          customer: newOrder.customer,
+          delivery_type: newOrder.deliveryType,
+          payment_method: newOrder.paymentMethod,
+          created_at: newOrder.createdAt
+        }]);
+      
+      if (error) throw error;
       showToast('Order placed successfully!');
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `orders/${newOrder.id}`);
+      console.error('Error placing order:', err);
+      showToast('Error placing order', 'error');
     }
 
     clearCart();
@@ -306,10 +170,16 @@ export const useStore = () => {
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     try {
-      await updateDoc(doc(db, 'orders', orderId), { status });
+      const { error } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', orderId);
+      
+      if (error) throw error;
       showToast(`Order status updated to ${status}`);
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+      console.error('Error updating order status:', err);
+      showToast('Error updating order status', 'error');
     }
   };
 
@@ -318,37 +188,96 @@ export const useStore = () => {
     const newProduct: Product = { ...product, id };
 
     try {
-      await setDoc(doc(db, 'products', id), newProduct);
+      const { error } = await supabase
+        .from('products')
+        .insert([{
+          id: newProduct.id,
+          name: newProduct.name,
+          tagline: newProduct.tagline,
+          image: newProduct.image,
+          accent_color: newProduct.accentColor,
+          description: newProduct.description,
+          story: newProduct.story,
+          highlights: newProduct.highlights,
+          details: newProduct.details,
+          usage: newProduct.usage,
+          gallery: newProduct.gallery,
+          price: newProduct.price,
+          category: newProduct.category,
+          stock: newProduct.stock,
+          variants: newProduct.variants,
+          is_new: newProduct.isNew
+        }]);
+      
+      if (error) throw error;
       showToast('Product added to inventory');
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `products/${id}`);
+      console.error('Error adding product:', err);
+      showToast('Error adding product', 'error');
     }
   };
 
   const updateProduct = async (updatedProduct: Product) => {
     try {
-      await setDoc(doc(db, 'products', updatedProduct.id), updatedProduct);
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: updatedProduct.name,
+          tagline: updatedProduct.tagline,
+          image: updatedProduct.image,
+          accent_color: updatedProduct.accentColor,
+          description: updatedProduct.description,
+          story: updatedProduct.story,
+          highlights: updatedProduct.highlights,
+          details: updatedProduct.details,
+          usage: updatedProduct.usage,
+          gallery: updatedProduct.gallery,
+          price: updatedProduct.price,
+          category: updatedProduct.category,
+          stock: updatedProduct.stock,
+          variants: updatedProduct.variants,
+          is_new: updatedProduct.isNew
+        })
+        .eq('id', updatedProduct.id);
+      
+      if (error) throw error;
       showToast('Product updated successfully');
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `products/${updatedProduct.id}`);
+      console.error('Error updating product:', err);
+      showToast('Error updating product', 'error');
     }
   };
 
   const deleteProduct = async (productId: string) => {
     try {
-      await deleteDoc(doc(db, 'products', productId));
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+      
+      if (error) throw error;
       showToast('Product removed from inventory');
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `products/${productId}`);
+      console.error('Error deleting product:', err);
+      showToast('Error deleting product', 'error');
     }
   };
 
   const addCoupon = async (coupon: Coupon) => {
     try {
-      await setDoc(doc(db, 'coupons', coupon.code), coupon);
+      const { error } = await supabase
+        .from('coupons')
+        .insert([{
+          code: coupon.code,
+          discount_percent: coupon.discountPercent,
+          is_active: coupon.isActive
+        }]);
+      
+      if (error) throw error;
       showToast('Coupon created successfully');
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `coupons/${coupon.code}`);
+      console.error('Error adding coupon:', err);
+      showToast('Error adding coupon', 'error');
     }
   };
 
@@ -358,52 +287,35 @@ export const useStore = () => {
 
     const newStatus = !coupon.isActive;
     try {
-      await updateDoc(doc(db, 'coupons', code), { isActive: newStatus });
+      const { error } = await supabase
+        .from('coupons')
+        .update({ is_active: newStatus })
+        .eq('code', code);
+      
+      if (error) throw error;
       showToast(`Coupon ${code} ${newStatus ? 'activated' : 'deactivated'}`);
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `coupons/${code}`);
+      console.error('Error toggling coupon:', err);
+      showToast('Error toggling coupon', 'error');
     }
   };
 
   const deleteCoupon = async (code: string) => {
     try {
-      await deleteDoc(doc(db, 'coupons', code));
+      const { error } = await supabase
+        .from('coupons')
+        .delete()
+        .eq('code', code);
+      
+      if (error) throw error;
       showToast('Coupon deleted');
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `coupons/${code}`);
+      console.error('Error deleting coupon:', err);
+      showToast('Error deleting coupon', 'error');
     }
   };
 
   // Admin Auth
-  const loginAdmin = async (password: string) => {
-    const adminEmail = "valuemoney77@gmail.com";
-    try {
-      const result = await signInWithEmailAndPassword(auth, adminEmail, password);
-      if (result.user.emailVerified) {
-        setIsAdmin(true);
-        showToast('Welcome back, Admin');
-        return true;
-      } else {
-        showToast('Please verify your email to access admin features', 'error');
-        return false;
-      }
-    } catch (err) {
-      console.error("Login failed:", err);
-      showToast('Invalid password or authentication error', 'error');
-      return false;
-    }
-  };
-
-  const logoutAdmin = async () => {
-    try {
-      await signOut(auth);
-      setIsAdmin(false);
-      showToast('Logged out successfully');
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
-
   return {
     isLoading,
     products,
@@ -413,8 +325,6 @@ export const useStore = () => {
     toast,
     clearToast,
     isAdminAuthenticated: isAdmin,
-    loginAdmin,
-    logoutAdmin,
     addToCart,
     removeFromCart,
     updateCartQuantity,
